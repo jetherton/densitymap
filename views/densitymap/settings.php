@@ -38,17 +38,17 @@
 				?>
 					<!-- green-box -->
 					<div class="green-box">
-						<h3><?php echo Kohana::lang('ui_main.layer_has_been');?> <?php echo $form_action; ?>!</h3>
+						<h3><?php echo Kohana::lang('densitymap.geometry_has_been');?> <?php echo $form_action; ?>!</h3>
 					</div>
 				<?php
 				}
 				?>
 				<!-- report-table -->
 				<div class="report-form">
-					<?php print form::open(NULL,array('id' => 'layerListing',
-					 	'name' => 'layerListing')); ?>
+					<?php print form::open(NULL,array('id' => 'geometryListing',
+					 	'name' => 'geometryListing')); ?>
 						<input type="hidden" name="action" id="action" value="">
-						<input type="hidden" name="layer_id" id="layer_id_action" value="">
+						<input type="hidden" name="geometry_id" id="geometry_id_action" value="">
 						<div class="table-holder">
 							<table class="table">
 								<thead>
@@ -77,45 +77,33 @@
 										</tr>
 									<?php	
 									}
-									foreach ($layers as $layer)
+									foreach ($geometrys as $geometry)
 									{
-										$layer_id = $layer->id;
-										$layer_name = $layer->layer_name;
-										$layer_color = $layer->layer_color;
-										$layer_url = $layer->layer_url;
-										$layer_file = $layer->layer_file;
-										$layer_visible = $layer->layer_visible;
+										$geometry_id = $geometry->id;
+										$category_id = $geometry->category_id;
+										$kml_file = $geometry->kml_file;
 										?>
 										<tr>
 											<td class="col-1">&nbsp;</td>
 											<td class="col-2">
 												<div class="post">
-													<h4><?php echo $layer_name; ?></h4>
+													<h4><?php echo $cat_array[$category_id]; ?></h4>
 												</div>
 												<ul class="info">
 													<?php
-													if($layer_file)
+													if($kml_file)
 													{
-														?><li class="none-separator"><?php echo Kohana::lang('ui_main.kml_kmz_file');?>: <strong><?php echo $layer_file; ?></strong>
-														&nbsp;[<a href="javascript:layerAction('i','DELETE FILE','<?php echo rawurlencode($layer_id);?>')">Delete</a>]</li>
+														?><li class="none-separator"><?php echo Kohana::lang('ui_main.kml_kmz_file');?>: <strong><?php echo $kml_file; ?></strong>
+														
 														<?php
-													}
-													?>
-												</ul>
-												<ul class="links">
-													<?php
-													if($layer_url)
-													{
-														?><li class="none-separator"><?php echo Kohana::lang('ui_main.kml_url');?>: <strong><?php echo text::auto_link($layer_url); ?></strong></li><?php
 													}
 													?>
 												</ul>
 											</td>
 											<td class="col-4">
 												<ul>
-													<li class="none-separator"><a href="#add" onClick="fillFields('<?php echo(rawurlencode($layer_id)); ?>','<?php echo(rawurlencode($layer_name)); ?>','<?php echo(rawurlencode($layer_url)); ?>','<?php echo(rawurlencode($layer_color)); ?>','<?php echo(rawurlencode($layer_file)); ?>')"><?php echo Kohana::lang('ui_main.edit');?></a></li>
-													<li class="none-separator"><a href="javascript:layerAction('v','SHOW/HIDE','<?php echo(rawurlencode($layer_id)); ?>')"<?php if ($layer_visible) echo " class=\"status_yes\"" ?>><?php echo Kohana::lang('ui_main.visible');?></a></li>
-<li><a href="javascript:layerAction('d','DELETE','<?php echo(rawurlencode($layer_id)); ?>')" class="del"><?php echo Kohana::lang('ui_main.delete');?></a></li>
+													<li class="none-separator"><a href="#add" onClick="fillFields('<?php echo(rawurlencode($geometry_id)); ?>','<?php echo(rawurlencode($category_id)); ?>','<?php echo(rawurlencode($kml_file)); ?>')"><?php echo Kohana::lang('ui_main.edit');?></a></li>													
+													<li><a href="javascript:geometryAction('d','DELETE','<?php echo(rawurlencode($geometry_id)); ?>')" class="del"><?php echo Kohana::lang('ui_main.delete');?></a></li>
 												</ul>
 											</td>
 										</tr>
@@ -138,20 +126,20 @@
 					<!-- tab -->
 					<div class="tab">
 						<?php print form::open(NULL,array('enctype' => 'multipart/form-data', 
-							'id' => 'layerMain', 'name' => 'layerMain')); ?>
-						<input type="hidden" id="layer_id" 
-							name="layer_id" value="" />
+							'id' => 'geometryMain', 'name' => 'geometryMain')); ?>
+						<input type="hidden" id="geometry_id" 
+							name="geometry_id" value="" />
 						<input type="hidden" name="action" 
 							id="action" value="a"/>
-						<input type="hidden" name="layer_file_old" 
-							id="layer_file_old" value=""/>
+						<input type="hidden" name="kml_file_old" 
+							id="kml_file_old" value=""/>
 						<div class="tab_form_item">
 							<strong><?php echo Kohana::lang('ui_main.category');?>:</strong><br />
-							<?php print form::input('layer_name', '', ' class="text"'); ?>
+							<?php print form::dropdown('category_id',$cat_array); ?>
 						</div>
 						<div class="tab_form_item">
 							<strong><?php echo Kohana::lang('ui_main.kml_kmz_upload');?>:</strong><br />
-							<?php print form::upload('layer_file', '', ''); ?>
+							<?php print form::upload('kml_file', '', ''); ?>
 						</div>
 						<div style="clear:both"></div>
 						<div class="tab_form_item">

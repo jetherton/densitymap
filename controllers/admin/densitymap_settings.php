@@ -31,7 +31,7 @@ class Densitymap_settings_Controller extends Admin_Controller
 
 
 	/**
-	 * Add Edit Layers (KML, KMZ, GeoRSS)
+	 * Add Edit geometrys (KML, KMZ, GeoRSS)
 	 */
 	public function index()
 	{
@@ -42,11 +42,11 @@ class Densitymap_settings_Controller extends Admin_Controller
 		$form = array
 		(
 			'action' => '',
-			'layer_id' => '',
-			'layer_name' => '',
-			'layer_url'	=> '',
-			'layer_file' => '',
-			'layer_color' => ''
+			'geometry_id' => '',
+			'geometry_name' => '',
+			'geometry_url'	=> '',
+			'kml_file' => '',
+			'geometry_color' => ''
 		);
 
 		// Copy the form as errors, so the errors will be stored with keys corresponding to the form field names
@@ -62,35 +62,38 @@ class Densitymap_settings_Controller extends Admin_Controller
 			// Fetch the submitted data
 			$post_data = array_merge($_POST, $_FILES);
 			
-			// Layer instance for the actions
-			$layer = (isset($post_data['layer_id']) AND Layer_Model::is_valid_layer($post_data['layer_id']))
-						? new Layer_Model($post_data['layer_id'])
-						: new Layer_Model();
+			// geometry instance for the actions
+			$geometry = (isset($post_data['geometry_id']) AND Densitymap_geometry_Model::is_valid_geometry($post_data['geometry_id']))
+						? new Densitymap_geometry_Model($post_data['geometry_id'])
+						: new Densitymap_geometry_Model();
 						
 			// Check for action
 			if ($post_data['action'] == 'a')
 			{
-				// Manually extract the primary layer data
-				$layer_data = arr::extract($post_data, 'layer_name', 'layer_color', 'layer_url', 'layer_file_old');
+				// Manually extract the primary geometry data
+				$geometry_data = arr::extract($post_data, 'category_id', 'kml_file_old');
 				
-				// Grab the layer file to be uploaded
-				$layer_data['layer_file'] = isset($post_data['layer_file']['name'])? $post_data['layer_file']['name'] : NULL;
+				// Grab the geometry file to be uploaded
+				$geometry_data['kml_file'] = isset($post_data['kml_file']['name'])? $post_data['kml_file']['name'] : NULL;
 				
-				// Extract the layer file for upload validation
-				$other_data = arr::extract($post_data, 'layer_file');
+				// Extract the geometry file for upload validation
+				$other_data = arr::extract($post_data, 'kml_file');
 				
-				// Set up validation for the layer file
+				// Set up validation for the geometry file
 				$post = Validation::factory($other_data)
 						->pre_filter('trim', TRUE)
-						->add_rules('layer_file', 'upload::valid','upload::type[kml,kmz]');
-				
+						->add_rules('kml_file', 'upload::valid','upload::type[kml,kmz]');
+				$old_file = $geometry->kml_file;
 				// Test to see if validation has passed
-				if ($layer->validate($layer_data) AND $post->validate())
+				if ($geometry->validate($geometry_data) AND $post->validate())
 				{
-					// Success! SAVE
-					$layer->save();
 					
-					$path_info = upload::save("layer_file");
+					$geometry->kml_file = $old_file;					
+					$geometry->category_id = $geometry_data["category_id"];					
+					// Success! SAVE
+					$geometry->save();
+					
+					$path_info = upload::save("kml_file");
 					if ($path_info)
 					{
 						$path_parts = pathinfo($path_info);
@@ -120,8 +123,13 @@ class Densitymap_settings_Controller extends Admin_Controller
 							}
 						}
 
-						$layer->layer_file = $file_name.".".$file_ext;
-						$layer->save();
+						$geometry->kml_file = $file_name.".".$file_ext;
+						$geometry->save();
+						//delete old file
+						if ( ! empty($old_file) AND file_exists(Kohana::config('upload.directory', TRUE).$old_file))
+						{
+							unlink(Kohana::config('upload.directory', TRUE) . $old_file);
+						}
 					}
 					
 					$form_saved = TRUE;
@@ -133,10 +141,10 @@ class Densitymap_settings_Controller extends Admin_Controller
 					// Validation failed
 
 					// Repopulate the form fields
-					$form = arr::overwrite($form, array_merge($layer_data->as_array(), $post->as_array()));
+					$form = arr::overwrite($form, array_merge($geometry_data->as_array(), $post->as_array()));
 
 					// Ropulate the error fields, if any
-					$errors = arr::overwrite($errors, array_merge($layer_data->errors('layer'), $post->errors('layer')));
+					$errors = arr::overwrite($errors, array_merge($geometry_data->errors('geometry'), $post->errors('geometry')));
 					$form_error = TRUE;
 				}
 				
@@ -144,61 +152,31 @@ class Densitymap_settings_Controller extends Admin_Controller
 			elseif ($post_data['action'] == 'd')
 			{
 				// Delete action
-				if ($layer->loaded)
+				if ($geometry->loaded)
 				{
 					// Delete KMZ file if any
-					$layer_file = $layer->layer_file;
-					if ( ! empty($layer_file) AND file_exists(Kohana::config('upload.directory', TRUE).$layer_file))
+					$kml_file = $geometry->kml_file;
+					if ( ! empty($kml_file) AND file_exists(Kohana::config('upload.directory', TRUE).$kml_file))
 					{
-						unlink(Kohana::config('upload.directory', TRUE) . $layer_file);
+						unlink(Kohana::config('upload.directory', TRUE) . $kml_file);
 					}
 
-					$layer->delete();
+					$geometry->delete();
 					$form_saved = TRUE;
 					$form_action = strtoupper(Kohana::lang('ui_admin.deleted'));
 				}
-			}
-			elseif ($post_data['action'] == 'v')
-			{
-				// Show/Hide Action
-				if ($layer->loaded == TRUE)
-				{
-					$layer->layer_visible =  ($layer->layer_visible == 1)? 0 : 1;
-					$layer->save();
-					
-					$form_saved = TRUE;
-					$form_action = strtoupper(Kohana::lang('ui_admin.modified'));
-				}
-			}
-			elseif ($post_data['action'] == 'i')
-			{
-				// Delete KML/KMZ action
-				if ($layer->loaded == TRUE)
-				{
-					$layer_file = $layer->layer_file;
-					if ( ! empty($layer_file) AND file_exists(Kohana::config('upload.directory', TRUE).$layer_file))
-					{
-						unlink(Kohana::config('upload.directory', TRUE) . $layer_file);
-					}
-
-					$layer->layer_file = null;
-					$layer->save();
-					
-					$form_saved = TRUE;
-					$form_action = strtoupper(Kohana::lang('ui_admin.modified'));
-				}
-			}
+			}			
 		}
 
 		// Pagination
 		$pagination = new Pagination(array(
 			'query_string' => 'page',
 			'items_per_page' => $this->items_per_page,
-			'total_items' => ORM::factory('layer')->count_all()
+			'total_items' => ORM::factory('densitymap_geometry')->count_all()
 		));
 
-		$layers = ORM::factory('layer')
-					->orderby('layer_name', 'asc')
+		$geometrys = ORM::factory('densitymap_geometry')
+					->orderby('id', 'asc')
 					->find_all($this->items_per_page, $pagination->sql_offset);
 
 		$this->template->content->errors = $errors;
@@ -207,8 +185,16 @@ class Densitymap_settings_Controller extends Admin_Controller
 		$this->template->content->form_action = $form_action;
 		$this->template->content->pagination = $pagination;
 		$this->template->content->total_items = $pagination->total_items;
-		$this->template->content->layers = $layers;
-
+		$this->template->content->geometrys = $geometrys;
+		
+		//get array of categories
+		$categories = ORM::factory("category")->where("category_visible", "1")->find_all();
+		$cat_array = array();
+		foreach($categories as $category)
+		{
+			$cat_array[$category->id] = $category->category_title;
+		}
+		$this->template->content->cat_array = $cat_array;
 		// Javascript Header
 		$this->template->colorpicker_enabled = TRUE;
 		$this->template->js = new View('densitymap/settings_js');

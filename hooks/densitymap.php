@@ -43,7 +43,8 @@ class densitymap {
 	
 	public function _add_test_button()
 	{
-		echo "<br/><br/><div><a href=\"#\" onclick=\"testDensityMap(); return false;\"> test density map</a></div>";
+		echo "<br/><br/><div><a href=\"#\" onclick=\"testDensityMap(); return false;\"> test density map</a>";
+		echo "<a href=\"#\" onclick=\"testDensityMap2(); return false;\"> Change color</a></div>";
 	}
 }
 

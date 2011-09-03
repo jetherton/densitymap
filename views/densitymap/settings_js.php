@@ -11,26 +11,24 @@
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
  */
 ?>
-// Layers JS
-function fillFields(id, layer_name, layer_url, layer_color, layer_file_old)
+// geometrys JS
+function fillFields(id, category_id, kml_file_old)
 {
-	$("#layer_id").attr("value", unescape(id));
-	$("#layer_name").attr("value", unescape(layer_name));
-	$("#layer_url").attr("value", unescape(layer_url));
-	$("#layer_color").attr("value", unescape(layer_color));
-	$("#layer_file_old").attr("value", unescape(layer_file_old));
+	$("#geometry_id").attr("value", unescape(id));
+	$("#category_id").val(category_id);
+	$("#kml_file_old").attr("value", unescape(kml_file_old));
 }
 
-function layerAction ( action, confirmAction, id )
+function geometryAction ( action, confirmAction, id )
 {
 	var statusMessage;
 	var answer = confirm('<?php echo Kohana::lang('ui_admin.are_you_sure_you_want_to'); ?> ' + confirmAction + '?')
 	if (answer){
 		// Set Category ID
-		$("#layer_id_action").attr("value", id);
+		$("#geometry_id_action").attr("value", id);
 		// Set Submit Type
 		$("#action").attr("value", action);		
 		// Submit Form
-		$("#layerListing").submit();
+		$("#geometryListing").submit();
 	}
 }
