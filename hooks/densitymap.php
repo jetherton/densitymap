@@ -37,7 +37,9 @@ class densitymap {
 	
 	public function _add_js()
 	{
+		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		$view = new View('densitymap/densitymap_js');
+		$view->geometries = $geometries;
 		$view->render(true);
 	}
 	

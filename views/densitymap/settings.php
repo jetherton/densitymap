@@ -45,6 +45,40 @@
 				?>
 				<!-- report-table -->
 				<div class="report-form">
+								<!-- tabs -->
+				<div class="tabs">
+					<!-- tabset -->
+					<a name="add"></a>
+					<ul class="tabset">
+						<li><a href="#" class="active"><?php echo Kohana::lang('ui_main.add_edit');?></a></li>
+					</ul>
+					<!-- tab -->
+					<div class="tab">
+						<?php print form::open(NULL,array('enctype' => 'multipart/form-data', 
+							'id' => 'geometryMain', 'name' => 'geometryMain')); ?>
+						<input type="hidden" id="geometry_id" 
+							name="geometry_id" value="" />
+						<input type="hidden" name="action" 
+							id="action" value="a"/>
+						<input type="hidden" name="kml_file_old" 
+							id="kml_file_old" value=""/>
+						<div class="tab_form_item">
+							<strong><?php echo Kohana::lang('ui_main.category');?>:</strong><br />
+							<?php print form::dropdown('category_id',$cat_array); ?>
+						</div>
+						<div class="tab_form_item">
+							<strong><?php echo Kohana::lang('ui_main.kml_kmz_upload');?>:</strong><br />
+							<?php print form::upload('kml_file', '', ''); ?>
+						</div>
+						<div style="clear:both"></div>
+						<div class="tab_form_item">
+							&nbsp;<br />
+							<input type="image" src="<?php echo url::file_loc('img'); ?>media/img/admin/btn-save.gif" class="save-rep-btn" />
+						</div>
+						<?php print form::close(); ?>			
+					</div>
+				</div>
+				
 					<?php print form::open(NULL,array('id' => 'geometryListing',
 					 	'name' => 'geometryListing')); ?>
 						<input type="hidden" name="action" id="action" value="">
@@ -116,37 +150,4 @@
 					<?php print form::close(); ?>
 				</div>
 				
-				<!-- tabs -->
-				<div class="tabs">
-					<!-- tabset -->
-					<a name="add"></a>
-					<ul class="tabset">
-						<li><a href="#" class="active"><?php echo Kohana::lang('ui_main.add_edit');?></a></li>
-					</ul>
-					<!-- tab -->
-					<div class="tab">
-						<?php print form::open(NULL,array('enctype' => 'multipart/form-data', 
-							'id' => 'geometryMain', 'name' => 'geometryMain')); ?>
-						<input type="hidden" id="geometry_id" 
-							name="geometry_id" value="" />
-						<input type="hidden" name="action" 
-							id="action" value="a"/>
-						<input type="hidden" name="kml_file_old" 
-							id="kml_file_old" value=""/>
-						<div class="tab_form_item">
-							<strong><?php echo Kohana::lang('ui_main.category');?>:</strong><br />
-							<?php print form::dropdown('category_id',$cat_array); ?>
-						</div>
-						<div class="tab_form_item">
-							<strong><?php echo Kohana::lang('ui_main.kml_kmz_upload');?>:</strong><br />
-							<?php print form::upload('kml_file', '', ''); ?>
-						</div>
-						<div style="clear:both"></div>
-						<div class="tab_form_item">
-							&nbsp;<br />
-							<input type="image" src="<?php echo url::file_loc('img'); ?>media/img/admin/btn-save.gif" class="save-rep-btn" />
-						</div>
-						<?php print form::close(); ?>			
-					</div>
-				</div>
 			</div>

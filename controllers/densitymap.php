@@ -19,11 +19,78 @@ class Densitymap_Controller extends Controller
 	
 	public function get_geometries($id = false)
 	{
-		echo '{"type": "FeatureCollection", "features": [{"geometry": {"type": "GeometryCollection", "geometries": [';
-		echo '{"type": "LineString", "coordinates": [[-12, 5], [-10, 6]]';
-		echo '}, {"type": "Polygon", "coordinates": [[["-10", "5"], ["-10", "6"],'; 
-		echo ' ["-11", "6"], ["-11", "5"], ["-10", "5"]]]';
-		echo '},{"type":"Point", "coordinates":["15.87646484375", "44.1748046875"]}]}, "type": "Feature",';
-		echo '"properties": {}}]}';
+		if(!$id)
+		{
+			return;
+		}
+		//get the geometry from the data base
+		$geometry = ORM::factory("densitymap_geometry")->where("id", $id)->find();
+		$json_file = Kohana::config('upload.directory', TRUE).$geometry->kml_file;
+		$content = file_get_contents($json_file);
+		echo $content;
+	}
+	
+	/**
+	 * This will figure out the styles for the given geometries based on the
+	 * occurance of reports with the dependent category in the geometry's category
+	 * @param unknown_type $category_id
+	 */
+	public function get_styles($category_id)
+	{
+		//loop through each of the geometries and see how many reports fall under both the geometry category and
+		//the dependent 
+		$geometries = ORM::factory("densitymap_geometry")->find_all();
+		$geometries_and_counts = array();
+		foreach($geometries as $geometry)
+		{
+			$mappings = ORM::factory("incident_category")
+				->where("incident_category.category_id = ". $geometry->category_id." OR incident_category.category_id = ". $category_id)
+				->orderby("incident_id", "ASC")
+				->find_all();
+				
+			//now loop over these and see where there was an actual match and create the count
+			$count = 0;
+			$last_report_id = null;
+			foreach($mappings as $mapping)
+			{
+				//if there are to mappings with the same incident_id then we made a positive hit
+				if($mapping->incident_id == $last_report_id)
+				{
+					$count++;
+				}
+				$last_report_id = $mapping->incident_id;
+			}
+			$geometries_and_counts[$geometry->id] = $count;
+		}//end of looping over all the geometries
+		
+		$max = -1;
+		$min = PHP_INT_MAX;
+		
+		//now loop over and figure out the max and min
+		foreach($geometries_and_counts as $id=>$count)
+		{
+			if($count > $max)
+			{
+				$max = $count;
+			}
+			if($count < $min)
+			{
+				$min = $count;
+			}
+		}
+		
+		$delta = $max - $min;
+		//now make the colors
+		$results = array();
+		foreach($geometries_and_counts as $id=>$count)
+		{
+			//RRGGBB
+			$above_min = $count - $min;
+			$color_val = 255-(($above_min/$delta)*255);
+			$color_str = (strlen(dechex($color_val)) == 1) ? "0".dechex($color_val) : dechex($color_val); 
+			$color_str = $color_str . "ff" . $color_str;
+			$results[$id] = $color_str;
+		}
+		echo json_encode($results);
 	}
 }

@@ -122,8 +122,10 @@ class Densitymap_settings_Controller extends Admin_Controller
 								unlink($path_info);
 							}
 						}
-
-						$geometry->kml_file = $file_name.".".$file_ext;
+						$json_file_name = $this->parse_kml($file_name, $file_ext);
+						//delete the KML file
+						unlink(Kohana::config('upload.directory', TRUE).$file_name.".".$file_ext);						
+						$geometry->kml_file = $json_file_name; 
 						$geometry->save();
 						//delete old file
 						if ( ! empty($old_file) AND file_exists(Kohana::config('upload.directory', TRUE).$old_file))
@@ -199,5 +201,112 @@ class Densitymap_settings_Controller extends Admin_Controller
 		$this->template->colorpicker_enabled = TRUE;
 		$this->template->js = new View('densitymap/settings_js');
 	}//end index function
+	
+	
+	/**
+	 * Turn that KML into geo json
+	 * @param unknown_type $kml_file_name
+	 */
+	private function parse_kml($kml_file_name, $kml_file_extention)
+	{
+		$json_file = fopen(Kohana::config('upload.directory', TRUE).$kml_file_name.".json", "w");		
+		$xml = simplexml_load_file(Kohana::config('upload.directory', TRUE).$kml_file_name.".".$kml_file_extention);
+		
+		
+		//start up the output json
+		fwrite($json_file, '{"type": "FeatureCollection", "features": [{"geometry": {"type": "GeometryCollection", "geometries": [');
+
+		
+		//go straight to the placemarks
+		$placemarks = $xml->Document->Placemark;
+		$areasCount = 0;
+		//loop over each area
+		foreach($placemarks as $placemark)
+		{
+			$areasCount++;
+			if($areasCount > 1)
+			{
+				fwrite($json_file,",");
+			}
+			$this->parsePlacemark($placemark, $json_file);		
+		}
+		
+		fwrite($json_file,"]}}]}");
+		fclose($json_file);
+		
+		return $kml_file_name.".json";
+		
+	}//end parse_kml
+	
+	
+	
+	/**
+	 * Handles one specific area
+	 */
+	function parsePlacemark ($placemark, $json_file)
+	{
+		$cumaltive_lat = 0;
+		$cumaltive_lon = 0;
+		$count = 0;
+		
+		//startup the area, it's name and points
+		//fwrite($json_file, '{"type": "Polygon", "coordinates": [[');		
+		
+		//loop over all the polygons in the MultiGeometry
+		$polygons = $placemark->MultiGeometry->Polygon;
+		if(!$polygons)
+		{//what if they're just using a polygon with not "multi geometry"
+			$polygons = $placemark->Polygon;
+		}
+		$polygonCount = 0;
+		foreach($polygons as $polygon)
+		{
+			//handle commas
+			$polygonCount++;
+			if($polygonCount > 1)
+			{
+				fwrite($json_file, ",");
+			}
+			
+			//an array of points for a polygon
+			fwrite($json_file, '{"type": "Polygon", "coordinates": [[');
+			
+			//get the coordinates for each polygon
+			$coordinatesStr = $polygon->outerBoundaryIs->LinearRing->coordinates[0];
+			//split these up on spaces. What's left should read: longitude,latitude,altitude
+			//$coordinateArray = explode (" ", $coordinatesStr);
+			$coordinateArray =  preg_split('/\s+/', $coordinatesStr);
+			
+			$tripletsCount = 0;
+			//now loop over these triplets
+			foreach($coordinateArray as $cordTriplet)
+			{			
+				$subArray = explode(",", $cordTriplet);
+	
+				if(count($subArray)< 2)
+				{
+					continue;
+				}
+	
+				//hanlde commas
+				$tripletsCount++;
+				if($tripletsCount > 1)
+				{
+					fwrite($json_file, ",");
+				}
+				
+				$lon = doubleval($subArray[0]);
+				$lat = doubleval($subArray[1]);
+				//$alt = floatval($subArray[2]);
+				
+				$count++;
+				$cumaltive_lon = $cumaltive_lon + $lon;
+				$cumaltive_lat = $cumaltive_lat + $lat;				
+				fwrite($json_file, "[$lon,$lat]");
+			}
+			fwrite($json_file, "]]}");
+						
+		}	
+	}//end parse placemark
 	
 }
