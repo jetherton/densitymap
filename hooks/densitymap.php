@@ -28,10 +28,10 @@ class densitymap {
 	 */
 	public function add()
 	{
-		if(Router::$controller == "main")
+		if(Router::$controller == "main" || Router::$controller == "bigmap")
 		{
 			Event::add('ushahidi_action.header_scripts', array($this, '_add_js'));
-			Event::add('ushahidi_action.map_main_filters', array($this, '_add_test_button'));
+			plugin::add_stylesheet("densitymap/css/densitymap");
 		}		
 	}
 	
@@ -41,12 +41,6 @@ class densitymap {
 		$view = new View('densitymap/densitymap_js');
 		$view->geometries = $geometries;
 		$view->render(true);
-	}
-	
-	public function _add_test_button()
-	{
-		echo "<br/><br/><div><a href=\"#\" onclick=\"testDensityMap(); return false;\"> test density map</a>";
-		echo "<a href=\"#\" onclick=\"testDensityMap2(); return false;\"> Change color</a></div>";
 	}
 }
 

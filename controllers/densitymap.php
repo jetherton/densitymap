@@ -16,7 +16,10 @@
 
 class Densitymap_Controller extends Controller
 {
-	
+	/**
+	 * return geo json of the geometry in question
+	 * @param unknown_type $id
+	 */
 	public function get_geometries($id = false)
 	{
 		if(!$id)
@@ -30,6 +33,7 @@ class Densitymap_Controller extends Controller
 		echo $content;
 	}
 	
+		
 	/**
 	 * This will figure out the styles for the given geometries based on the
 	 * occurance of reports with the dependent category in the geometry's category
@@ -53,8 +57,8 @@ class Densitymap_Controller extends Controller
 			$last_report_id = null;
 			foreach($mappings as $mapping)
 			{
-				//if there are to mappings with the same incident_id then we made a positive hit
-				if($mapping->incident_id == $last_report_id)
+				//if there are two mappings with the same incident_id then we made a positive hit
+				if($mapping->incident_id == $last_report_id || ($category_id == $geometry->category_id) || $category_id == "0")
 				{
 					$count++;
 				}
@@ -85,12 +89,22 @@ class Densitymap_Controller extends Controller
 		foreach($geometries_and_counts as $id=>$count)
 		{
 			//RRGGBB
-			$above_min = $count - $min;
-			$color_val = 255-(($above_min/$delta)*255);
-			$color_str = (strlen(dechex($color_val)) == 1) ? "0".dechex($color_val) : dechex($color_val); 
-			$color_str = $color_str . "ff" . $color_str;
-			$results[$id] = $color_str;
+			if($delta != 0)
+			{
+				$above_min = $count - $min;
+				$color_val = 255-(($above_min/$delta)*255);
+				$color_str = (strlen(dechex($color_val)) == 1) ? "0".dechex($color_val) : dechex($color_val); 
+				$color_str = $color_str . "ff" . $color_str;
+				
+				$results[$id] = array("color"=>$color_str, "count"=>$count);;
+			}
+			else 
+			{
+				$results[$id] = array("color"=>"ffffff", "count"=>$count);
+			}
 		}
+		$results["max"] = $max;
+		$results["min"] = $min;
 		echo json_encode($results);
 	}
 }

@@ -1,0 +1,48 @@
+@CHARSET "UTF-8";
+
+.densityMap_buttons{
+	border: solid 1px black;
+	margin: 0px 20px;
+	padding:5px;
+	position: relative;
+	background: #ccc;
+}
+
+.densityMap_buttons:hover{
+	background: #ddd;
+	text-decoration:none;
+}
+
+.densityMap_buttons.denstiyMapButton_active{
+	background: #3484AC;
+	color:white;
+	text-decoration:none;
+}
+
+.densityMap_buttons.denstiyMapButton_active:hover{
+	background: #64a4cC;
+	color:white;
+	text-decoration:none;
+}
+
+#densityMapButtonHolder{
+	background:#E7E3DA;
+	padding: 10px;
+	border-top:#C7C2BC 7px solid;
+	}
+	
+#densityMapCategory{
+	font-size:14px;
+	font-weight:bold;
+}
+
+#densityMapScale{
+	margin:5px;
+	background-image:url('../img/scale.png');
+	background-repeat:no-repeat;
+}
+
+#densityMapScaleMax{
+	right: -150px;
+	position:relative;
+}

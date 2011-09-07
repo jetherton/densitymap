@@ -15,6 +15,9 @@
 		"density_map"=>"Density Map",
 		"density_map_settings" => "Density Map Settings",
 		"geometry_has_been" => "Geometry has been added",
+		"dots" => "Dots",
+		"min"=>"Min",
+		"max"=>"Max",
 		
 	);
 ?>
