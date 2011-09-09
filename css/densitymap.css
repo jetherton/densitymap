@@ -46,3 +46,8 @@
 	right: -150px;
 	position:relative;
 }
+
+.densityMap_options{
+	padding-top:5px;
+	display:none;
+	}

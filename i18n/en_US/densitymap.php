@@ -18,6 +18,10 @@
 		"dots" => "Dots",
 		"min"=>"Min",
 		"max"=>"Max",
+		"show_densitymap"=>"Show Density Map:",
+		"show_dots"=>"Show Dots:",
+		"yes"=>"Yes",
+		"no"=>"No",
 		
 	);
 ?>
