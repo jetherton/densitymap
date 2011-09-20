@@ -11,11 +11,13 @@ function DensityMap()
 	this.geometries = new Array();
 	this.controller = "<?php echo Router::$controller; ?>";
 	this.showDots = true;
+	this.showDensityMap = true;
 	this.densityMapDisplayed = false;
 	this.label_layer = null;
 	//set up the filter that we will apply
 	this.currentFilter = new Array();
-	this.currentFilter["logicalOperator"] = "or"; 
+	this.currentFilter["logicalOperator"] = "or";
+	this.currentFilter["categories"] = new Array();  
 	this.currentFilter["gMediaType"] = 0;
 
 	
@@ -96,28 +98,17 @@ function DensityMap()
 		}		
 	};
 
-	
-	/******************************************************************************************************************** 
-	* Triggered when the user changes the category filter 
-	**/
-	this.setCategory = function(categoryId)
-	{
-		//update the filter:
-		This.currentFilter["cat"] = categoryId;
-		This.updateDensityMap();
-		
-				
-	};
 
 	/*****************************************************************************************************************
 	* This function is called when something changes to update the density map
 	*/
 	this.updateDensityMap = function()
 	{
-		var params = "?c=" + This.currentFilter["cat"] +
+		var params = "?c=" + This.currentFilter["categories"].join(",") +
 			'&s=' + This.currentFilter["startDate"] +
 			'&e=' + This.currentFilter["endDate"] +
-			'&m=' + This.currentFilter["gMediaType"];
+			'&m=' + This.currentFilter["gMediaType"] +
+			'&lo=' + This.currentFilter["logicalOperator"];
 
 		//update the geometry
 		$.get('<?php echo url::base(); ?>densitymap/get_styles' + params, this.setCategoryCallBack);
@@ -136,7 +127,8 @@ function DensityMap()
 					map.removeLayer(This.label_layer);
 				}
 				This.label_layer = labelLayer;
-				map.addLayer(labelLayer);
+				map.addLayer(labelLayer);				
+				This.label_layer.setVisibility(This.showDensityMap);
 
 		//now add event hanlders so we get pop ups:
 		selectControl = new OpenLayers.Control.SelectFeature(labelLayer);
@@ -176,11 +168,13 @@ function DensityMap()
 		//check to see if the time filter has changed
 		if(This.currentFilter["startDate"] != $("#startDate").val() || 
 				This.currentFilter["endDate"] != $("#endDate").val() ||
-				This.currentFilter["gMediaType"] != gMediaType)
+				This.currentFilter["gMediaType"] != gMediaType ||
+				This.currentFilter["logicalOperator"] != $("#currentLogicalOperator").val()) 
 		{
 			This.currentFilter["startDate"] = $("#startDate").val(); 
 			This.currentFilter["endDate"] = $("#endDate").val();
 			This.currentFilter["gMediaType"] = gMediaType;
+			This.currentFilter["logicalOperator"] = $("#currentLogicalOperator").val();
 			
 			This.updateDensityMap();
 		}
@@ -303,22 +297,21 @@ function DensityMap()
 	*/
 	this.enableDensityHandler = function()
 	{
-		var visible;
 	    if ($("input[name='enableDensity']:checked").val() == 'densityEnabled')
 	    {
-			visible = true;
+			This.showDensityMap = true;
 	    }
 	    else if ($("input[name='enableDensity']:checked").val() == 'densityDisabled')
 	    {
-	    	visible = false;
+	    	This.showDensityMap = false;
 	    }
 	    
 	    //loop over layers and turn them off
 	    for(id in This.geometries)
 	    {
-		    This.geometries[id].setVisibility(visible);
-		    This.label_layer.setVisibility(visible);
+		    This.geometries[id].setVisibility(This.showDensityMap);
 	    }	     
+	    This.label_layer.setVisibility(This.showDensityMap);
 	}; //end enableDensityHandler
 
 	/**
@@ -348,8 +341,28 @@ function DensityMap()
 	    
 	}; //end enableDensityHandler
 
+	/***************************************************************************************************
+	* Used to remove categories from the category filter
+	* If there was an Array().remove(obj) function, I wouldn't have to do this
+	*/
+	this.removeCategoryFilter = function(idToRemove)
+	{
+		var newArray = new Array();
+		for(index in This.currentFilter["categories"])
+		{
+			var catId = This.currentFilter["categories"][index];
+			if(catId != idToRemove)
+			{
+				newArray.push(catId);
+			}
+		}
+		This.currentFilter["categories"] = newArray;
+
+		//deactivate
+		$("#densityMapcat_"+idToRemove).removeClass("active");
+	}
 	
-	/**
+	/*****************************************************************************************
 	* handles clicks to he dropCat, only for admin map variants
 	*/
 	this.dropCatHandler = function()
@@ -378,7 +391,7 @@ function DensityMap()
 				{
 					//remove this category ID from the list of IDs to show
 					var idNum = $(this).attr("id").substring(4);
-					currentCat = removeCategoryFilter(idNum, currentCat);
+					This.removeCategoryFilter(idNum);
 				}
 			});
 			$("#densityMapcatChild_"+catID).hide();
@@ -392,14 +405,6 @@ function DensityMap()
 	*/
 	this.categoryClickHandler = function()
 	{
-		var catID = this.id.substring(14);
-		
-		//make all the other kids not active
-		$("a[id^='densityMapcat_']").removeClass("active"); // Remove All active
-		$("[id^='densityMapcatChild_']").hide(); // Hide All Children DIV
-		$("#densityMapcat_" + catID).addClass("active"); // Add Highlight
-		$("#densityMapcatChild_" + catID).show(); // Show children DIV
-		$(this).parents("div").show();
 
 		if(This.initialized == undefined || This.initialized == false)
 		{
@@ -407,8 +412,107 @@ function DensityMap()
 			This.initialize(ids);
 			This.initialized = true;
 		}
-		This.setCategory(catID);
+	
+		var catID = this.id.substring(14);
+		if(!This.usingAdminMap()) // we are using the admin map functionality		
+		{
+			//make all the other kids not active
+			$("a[id^='densityMapcat_']").removeClass("active"); // Remove All active
+			$("[id^='densityMapcatChild_']").hide(); // Hide All Children DIV
+			$("#densityMapcat_" + catID).addClass("active"); // Add Highlight
+			$("#densityMapcatChild_" + catID).show(); // Show children DIV
+			$(this).parents("div").show();
+	
+			
+			This.currentFilter["categories"] = [catID];			
+		}
+		else //we are using the admin map functionality
+		{
+
+			
+			
+			//First we check if the "All Categories" button was pressed. If so unselect everything else
+			if( catID == "0")
+			{
+				if( !$("#densityMapcat_0").hasClass("active")) //it's being activated so unselect everything else
+				{
+					//unselect all other selected categories
+					while(This.currentFilter["categories"].length > 0)
+					{
+						This.removeCategoryFilter(This.currentFilter["categories"][0]);
+					}
+				}
+			}
+			else
+			{ //we're dealing wtih single categories or parents
+				//first check and see if we're dealing with a parent category
+				if( $("#densityMapcatChild_"+catID).find('a').length > 0)
+				{
+			
+					//we want to deactivate any kid categories.
+					var kids = $("#densityMapcatChild_"+catID).find('a');
+					kids.each(function(){
+						if($(this).hasClass("active"))
+						{
+							//remove this category ID from the list of IDs to show
+							var idNum = $(this).attr("id").substring(4);
+							This.removeCategoryFilter(idNum);
+						}
+					});
 				
+				}//end of if for dealing with parents
+				
+				//check if we're dealing with a child
+				if($(this).attr("cat_parent"))
+				{
+					//get the parent ID
+					parentID = $(this).attr("cat_parent");
+					//if it's active deactivate it
+					//first check and see if we're adding or removing this category
+					if($("#densityMapcat_"+parentID).hasClass("active")) //it is active so make it unactive and remove this category from the list of categories we're looking at.
+					{ 
+						This.removeCategoryFilter(parentID);
+					}
+					
+				}//end of dealing with kids
+				
+				//first check and see if we're adding or removing this category
+				if($("#densityMapcat_"+catID).hasClass("active")) //it is active so make it unactive and remove this category from the list of categories we're looking at.
+				{ 
+					This.removeCategoryFilter(catID);
+				}
+				else //it isn't active so make it active
+				{ 
+					//seems on really big maps with lots of reports we can't do more than 4 categories at a time.
+					if(This.currentFilter["categories"].length < (14+1))
+					{
+						$("#densityMapcat_"+catID).addClass("active");
+						
+						//make sure the "all categories" button isn't active
+						This.removeCategoryFilter("0");
+						
+						//add this category ID from the list of IDs to show
+						This.currentFilter["categories"].push(catID);
+					}
+					else
+					{
+						alert("Sorry, do to the size and complexity of the information on this site we cannot display more than "+maxCategories+" categories at once");
+					}
+				}
+			}
+			
+			
+			//check to make sure something is selected. If nothing is selected then select "all gategories"		
+			if( This.currentFilter["categories"].length == 0)
+			{
+				$("#densityMapcat_0").addClass("active");
+				This.currentFilter["categories"] = [0];
+
+			}
+		}//end if we're using big map
+		// Destroy any open popups
+		//onPopupClose();
+		This.updateDensityMap();
 		return false;
 	};//end category click handler
 

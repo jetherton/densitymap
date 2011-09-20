@@ -17,7 +17,7 @@
 class Densitymap_Controller extends Controller
 {
 	
-	/**
+	/***********************************************************************************************************
 	 * Construct things
 	 * Enter description here ...
 	 */
@@ -28,7 +28,7 @@ class Densitymap_Controller extends Controller
 		$this->table_prefix = Kohana::config('database.default.table_prefix');
 	}
 	
-	/**
+	/***********************************************************************************************************
 	 * return geo json of the geometry in question
 	 * @param unknown_type $id
 	 */
@@ -45,7 +45,7 @@ class Densitymap_Controller extends Controller
 		echo $content;
 	}
 
-	/**
+	/***********************************************************************************************************
 	 * Private function to handle the categories parameter
 	 * Enter description here ...
 	 */
@@ -60,7 +60,7 @@ class Densitymap_Controller extends Controller
 			}
 			else
 			{
-				$category_ids = explode(",", $_GET['c'],-1); //get rid of that trailing ";"
+				$category_ids = explode(",", $_GET['c']); //get rid of that trailing ";"
 			}
 		}
 		else
@@ -75,7 +75,7 @@ class Densitymap_Controller extends Controller
 		return $category_ids;
 	}
 	
-	/**
+	/***********************************************************************************************************
 	 * Gets and formats the Logical operator for us
 	 * Enter description here ...
 	 */
@@ -89,7 +89,7 @@ class Densitymap_Controller extends Controller
 		return $logical_operator;
 	}
 	
-	/**
+	/***********************************************************************************************************
 	 * Handles all the parameters that make the Where Text fun
 	 * Enter description here ...
 	 */
@@ -119,7 +119,7 @@ class Densitymap_Controller extends Controller
 	}
 	
 	
-	/**
+	/***********************************************************************************************************
 	 * Figures out what the category array should be
 	 * Enter description here ...
 	 * @param unknown_type $geometry
@@ -152,7 +152,9 @@ class Densitymap_Controller extends Controller
 		return $category_ids;
 	}
 	
-	
+	/***********************************************************************************************************
+	 * Gets the counts of things for us
+	 */
 	private function get_counts()
 	{
 		$logical_operator = $this->handleLogicalOperatorParamter();
@@ -177,15 +179,12 @@ class Densitymap_Controller extends Controller
 				
 			//figure out how many categories we need for a valid match
 			$minimum_category_count_needed = 2;
-			if(count($cats_and_geometry) == 1)
+			if(in_array($geometry->category_id, $category_ids))
 			{
-				$minimum_category_count_needed = 1;
+				$minimum_category_count_needed = 1;	
 			}
-			elseif(strtolower($logical_operator) == 'and')
-			{
-				$minimum_category_count_needed = count($cats_and_geometry);
-			}
-			
+
+			//echo "<br/><br/>Geometry: " . $geometry->category_id . " cats needed: " . $minimum_category_count_needed . "<br/>";
 			
 			//now loop over these and see where there was an actual match and create the count
 			$count = 0;
@@ -193,41 +192,49 @@ class Densitymap_Controller extends Controller
 			$report_category_count = 0;
 			$found_geometry_cat_id = false;
 			$is_first = true;	
-			//echo "<br/><br/><br/>";		
-			foreach($reports as $report)
-			{				
-				//We need to check every different set of IDs, do they contain at least one $geometry->category_id
-				//if there are two mappings with the same incident_id then we made a positive hit
-				
-				if($report->id != $last_report_id && !$is_first) //we've got a new id
-				{
-					if($found_geometry_cat_id && $report_category_count >= $minimum_category_count_needed )
-					{
-						$count++;
-						//echo "COUNT +1 <br/>";
-					}
-					//reset everything
-					$found_geometry_cat_id = false;
-					$report_category_count = 0;
-				}
-				$last_report_id = $report->id;
-				//echo "Report ID: " . $report->id . " Cat ID: " . $report->cat_id . " GeometryID: " . $geometry->category_id . "<br/>";	
-			
-				if($report->cat_id == $geometry->category_id) 
-				{
-					$found_geometry_cat_id = true;
-				}
-				$report_category_count++;
-				$is_first = false;	
-			}
-			
-			//to catch the last run of the loop
-			if($found_geometry_cat_id && $report_category_count >= $minimum_category_count_needed )
+			//echo "<br/><br/><br/>";
+			if(strtolower($logical_operator) == 'and' OR count($cats_and_geometry) == 1)
 			{
-				$count++;
-				//echo "COUNT +1 <br/>";
+				$geometries_and_counts[$geometry->id] = count($reports);
+				//echo "COUNT  ". count($reports) . "<br/>";
 			}
-			$geometries_and_counts[$geometry->id] = $count;
+			else
+			{		
+				foreach($reports as $report)
+				{				
+					//We need to check every different set of IDs, do they contain at least one $geometry->category_id
+					//if there are two mappings with the same incident_id then we made a positive hit
+					
+					if($report->id != $last_report_id && !$is_first) //we've got a new id
+					{
+						if($found_geometry_cat_id AND $report_category_count >= $minimum_category_count_needed )
+						{
+							$count++;
+							//echo "COUNT +1 <br/>";
+						}
+						//reset everything
+						$found_geometry_cat_id = false;
+						$report_category_count = 0;
+					}
+					$last_report_id = $report->id;
+					//echo "Report ID: " . $report->id . " Cat ID: " . $report->cat_id . " GeometryID: " . $geometry->category_id . "<br/>";	
+				
+					if($report->cat_id == $geometry->category_id) 
+					{
+						$found_geometry_cat_id = true;
+					}
+					$report_category_count++;
+					$is_first = false;	
+				}//end loop over all the reports
+				
+				//to catch the last run of the loop
+				if($found_geometry_cat_id && $report_category_count >= $minimum_category_count_needed )
+				{
+					$count++;
+					//echo "COUNT +1 <br/>";
+				}
+				$geometries_and_counts[$geometry->id] = $count;
+			}//end if it's or
 		}//end of looping over all the geometries
 		
 		return $geometries_and_counts;
@@ -236,7 +243,7 @@ class Densitymap_Controller extends Controller
 	
 	
 	
-	/**
+	/***********************************************************************************************************
 	 * This will figure out the styles for the given geometries based on the
 	 * occurance of reports with the dependent category in the geometry's category
 	 * @param unknown_type $category_id
@@ -290,7 +297,9 @@ class Densitymap_Controller extends Controller
 	}
 	
 	
-	/**based on what's selected this returns the labels**/
+	/***********************************************************************************************************
+	 * based on what's selected this returns the labels
+	 */
 	public function get_labels()
 	{		
 		$i = 0;
