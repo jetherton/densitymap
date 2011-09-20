@@ -44,9 +44,11 @@ class Densitymap_settings_Controller extends Admin_Controller
 			'action' => '',
 			'geometry_id' => '',
 			'geometry_name' => '',
-			'geometry_url'	=> '',
+			//'geometry_url'	=> '',
 			'kml_file' => '',
-			'geometry_color' => ''
+			//'geometry_color' => ''
+			'label_lat' => '',
+			'label_long' => '',
 		);
 
 		// Copy the form as errors, so the errors will be stored with keys corresponding to the form field names
@@ -71,7 +73,7 @@ class Densitymap_settings_Controller extends Admin_Controller
 			if ($post_data['action'] == 'a')
 			{
 				// Manually extract the primary geometry data
-				$geometry_data = arr::extract($post_data, 'category_id', 'kml_file_old');
+				$geometry_data = arr::extract($post_data, 'category_id', 'kml_file_old', 'label_lat', 'label_lon');
 				
 				// Grab the geometry file to be uploaded
 				$geometry_data['kml_file'] = isset($post_data['kml_file']['name'])? $post_data['kml_file']['name'] : NULL;
@@ -90,6 +92,8 @@ class Densitymap_settings_Controller extends Admin_Controller
 					
 					$geometry->kml_file = $old_file;					
 					$geometry->category_id = $geometry_data["category_id"];					
+					$geometry->label_lat = $geometry_data["label_lat"];
+					$geometry->label_lon = $geometry_data["label_lon"];
 					// Success! SAVE
 					$geometry->save();
 					

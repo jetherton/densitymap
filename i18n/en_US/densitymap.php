@@ -22,6 +22,9 @@
 		"show_dots"=>"Show Dots:",
 		"yes"=>"Yes",
 		"no"=>"No",
+		"label_lat_lon"=>"Label Latitude and Longitude",
+		"label_lat"=>"Label Latitude",
+		"label_lon"=>"Label Longitude",
 		
 	);
 ?>

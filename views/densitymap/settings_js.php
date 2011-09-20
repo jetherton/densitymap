@@ -12,10 +12,12 @@
  */
 ?>
 // geometrys JS
-function fillFields(id, category_id, kml_file_old)
+function fillFields(id, category_id, kml_file_old, lat, lon)
 {
 	$("#geometry_id").attr("value", unescape(id));
 	$("#category_id").val(category_id);
+	$("#label_lat").val(lat);
+	$("#label_lon").val(lon);
 	$("#kml_file_old").attr("value", unescape(kml_file_old));
 }
 

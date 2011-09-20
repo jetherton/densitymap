@@ -67,6 +67,14 @@
 							<?php print form::dropdown('category_id',$cat_array); ?>
 						</div>
 						<div class="tab_form_item">
+							<strong><?php echo Kohana::lang('densitymap.label_lat');?>:</strong><br />
+							<?php print form::input('label_lat', ''); ?>
+						</div>
+						<div class="tab_form_item">
+							<strong><?php echo Kohana::lang('densitymap.label_lon');?>:</strong><br />
+							<?php print form::input('label_lon', ''); ?>
+						</div>
+						<div class="tab_form_item">
 							<strong><?php echo Kohana::lang('ui_main.kml_kmz_upload');?>:</strong><br />
 							<?php print form::upload('kml_file', '', ''); ?>
 						</div>
@@ -89,6 +97,7 @@
 									<tr>
 										<th class="col-1">&nbsp;</th>
 										<th class="col-2"><?php echo Kohana::lang('ui_main.category');?></th>
+										<th class="col-3"><?php echo Kohana::lang('densitymap.label_lat_lon');?></th>
 										<th class="col-4"><?php echo Kohana::lang('ui_main.actions');?></th>
 									</tr>
 								</thead>
@@ -116,6 +125,8 @@
 										$geometry_id = $geometry->id;
 										$category_id = $geometry->category_id;
 										$kml_file = $geometry->kml_file;
+										$lon = $geometry->label_lon;
+										$lat = $geometry->label_lat;
 										?>
 										<tr>
 											<td class="col-1">&nbsp;</td>
@@ -134,9 +145,12 @@
 													?>
 												</ul>
 											</td>
+											<td class="col-3">
+												<?php echo $lat. ", ". $lon; ?>
+											</td>
 											<td class="col-4">
 												<ul>
-													<li class="none-separator"><a href="#add" onClick="fillFields('<?php echo(rawurlencode($geometry_id)); ?>','<?php echo(rawurlencode($category_id)); ?>','<?php echo(rawurlencode($kml_file)); ?>')"><?php echo Kohana::lang('ui_main.edit');?></a></li>													
+													<li class="none-separator"><a href="#add" onClick="fillFields('<?php echo(rawurlencode($geometry_id)); ?>','<?php echo(rawurlencode($category_id)); ?>','<?php echo(rawurlencode($kml_file)); ?>', '<?php echo(rawurlencode($lat));?>', '<?php echo(rawurlencode($lon)); ?>')"><?php echo Kohana::lang('ui_main.edit');?></a></li>													
 													<li><a href="javascript:geometryAction('d','DELETE','<?php echo(rawurlencode($geometry_id)); ?>')" class="del"><?php echo Kohana::lang('ui_main.delete');?></a></li>
 												</ul>
 											</td>

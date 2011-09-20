@@ -10,6 +10,17 @@ function DensityMap()
 	this.initialized = false;	
 	this.geometries = new Array();
 	this.controller = "<?php echo Router::$controller; ?>";
+	this.showDots = true;
+	this.densityMapDisplayed = false;
+	this.label_layer = null;
+	//set up the filter that we will apply
+	this.currentFilter = new Array();
+	this.currentFilter["logicalOperator"] = "or"; 
+	this.currentFilter["gMediaType"] = 0;
+
+	
+	
+
 	 
 	this.defaultStyle = new OpenLayers.Style({
 	  	  pointRadius: "8",
@@ -20,7 +31,23 @@ function DensityMap()
 				graphicZIndex: 1
 			});
 
-	/**
+	this.labelStyle = new OpenLayers.Style({
+	  	  pointRadius: "8",
+				fillColor: "#aaaaaa",
+				fillOpacity: "0.0",
+				strokeColor: "#888888",
+				strokeWidth: 2,
+				strokeOpacity: "0.0",
+				graphicZIndex: 1,
+				label:"${count}",
+				fontWeight: "bold",
+				fontColor: "#000000",
+				fontSize: "20px"
+			});
+
+
+
+	/**********************************************************************************************************
 	* Tells us if we're in big map world
 	*/
 	this.usingAdminMap = function()
@@ -33,49 +60,97 @@ function DensityMap()
 		} 
 		return false;
 	};
-	
-		this.setCategoryCallBack = function(data){
-			$("#densityMapScale").show();
-			colors = jQuery.parseJSON(data);	
-			for(id in colors)
-			{
-				if(id == "max")
-				{				
-					$("#densityMapScaleMax").text("<?php echo Kohana::lang("densitymap.max"); ?>: " + colors[id]); 
-				}
-				else if (id == "min")
-				{				
-					$("#densityMapScaleMin").text("<?php echo Kohana::lang("densitymap.min"); ?>: " + colors[id]);
-				}
-				else
-				{ 
-					var tempStyle = new OpenLayers.Style({
-					  	  pointRadius: "8",
-							fillColor: "#" + colors[id]["color"],
-							fillOpacity: "0.6",
-							strokeColor: "#" + colors[id]["color"],
-							strokeWidth: 1,
-							graphicZIndex: 1,
-							label:colors[id]["count"],
-							fontWeight: "bold",
-							fontColor: "#000000",
-							fontSize: "20px"
-						});
-					var tempStyleMap = new OpenLayers.StyleMap({"default":tempStyle});
-					var geometry = This.geometries[id];
-					geometry.styleMap = tempStyleMap;
-					geometry.redraw();
-				}
-			}		
+
+	/******************************************************************************************************
+	* Handles the new data for the geometries after a change to the filter has been made
+	*/
+	this.setCategoryCallBack = function(data)
+	{
+		$("#densityMapScale").show();
+		colors = jQuery.parseJSON(data);	
+		for(id in colors)
+		{
+			if(id == "max")
+			{				
+				$("#densityMapScaleMax").text("<?php echo Kohana::lang("densitymap.max"); ?>: " + colors[id]); 
+			}
+			else if (id == "min")
+			{				
+				$("#densityMapScaleMin").text("<?php echo Kohana::lang("densitymap.min"); ?>: " + colors[id]);
+			}
+			else
+			{ 
+				var tempStyle = new OpenLayers.Style({
+				  	  pointRadius: "8",
+						fillColor: "#" + colors[id]["color"],
+						fillOpacity: "0.6",
+						strokeColor: "#777777",
+						strokeWidth: 2,
+						graphicZIndex: 1
+					});
+				var tempStyleMap = new OpenLayers.StyleMap({"default":tempStyle});
+				var geometry = This.geometries[id];
+				geometry.styleMap = tempStyleMap;
+				geometry.redraw();
+			}
+		}		
 	};
 
-	/** Ask the server for the break down of how a category is distributed **/
-	this.setCategory = function(categoryId){
-		$.get('<?php echo url::base(); ?>densitymap/get_styles/'+categoryId, this.setCategoryCallBack);
-	}
+	
+	/******************************************************************************************************************** 
+	* Triggered when the user changes the category filter 
+	**/
+	this.setCategory = function(categoryId)
+	{
+		//update the filter:
+		This.currentFilter["cat"] = categoryId;
+		This.updateDensityMap();
+		
+				
+	};
 
-	/***
-	* Used to load stuff in one layer at a time.
+	/*****************************************************************************************************************
+	* This function is called when something changes to update the density map
+	*/
+	this.updateDensityMap = function()
+	{
+		var params = "?c=" + This.currentFilter["cat"] +
+			'&s=' + This.currentFilter["startDate"] +
+			'&e=' + This.currentFilter["endDate"] +
+			'&m=' + This.currentFilter["gMediaType"];
+
+		//update the geometry
+		$.get('<?php echo url::base(); ?>densitymap/get_styles' + params, this.setCategoryCallBack);
+
+		
+		//get the labels
+		var labelLayer = new OpenLayers.Layer.GML("densityMap_labels", "<?php echo url::base(); ?>densitymap/get_labels" + params, 
+				{
+					format: OpenLayers.Format.GeoJSON,
+					projection: map.displayProjection,
+					styleMap: new OpenLayers.StyleMap({"default":This.labelStyle})
+				});
+		
+				if(This.label_layer != null)
+				{
+					map.removeLayer(This.label_layer);
+				}
+				This.label_layer = labelLayer;
+				map.addLayer(labelLayer);
+
+		//now add event hanlders so we get pop ups:
+		selectControl = new OpenLayers.Control.SelectFeature(labelLayer);
+		map.addControl(selectControl);
+		selectControl.activate();
+		labelLayer.events.on({
+			"featureselected": onFeatureSelect,
+			"featureunselected": onFeatureUnselect
+		});
+		
+	};
+
+	/******************************************************************************************************************
+	* Used to load stuff in one layer at a time when the density map is first initialized.
 	* hopefully with out freezing
 	*/
 	this.loadLayer = function(id)
@@ -90,13 +165,57 @@ function DensityMap()
 				This.geometries[id] = geometry;			
 	};
 
-	//function to initialize the density map with the layers that contain the
-	//geometries of the different areas we're concerned with
-	this.initialize = function(ids){
+	/*****************************************************************************************************************
+	* Handles events from the map when a new layer is added
+	* This is mainly used to keep the dots turned off
+	* And check for changes to the time 
+	* and media filter
+	*/
+	this.handleAddLayerEvents = function(e)
+	{
+		//check to see if the time filter has changed
+		if(This.currentFilter["startDate"] != $("#startDate").val() || 
+				This.currentFilter["endDate"] != $("#endDate").val() ||
+				This.currentFilter["gMediaType"] != gMediaType)
+		{
+			This.currentFilter["startDate"] = $("#startDate").val(); 
+			This.currentFilter["endDate"] = $("#endDate").val();
+			This.currentFilter["gMediaType"] = gMediaType;
 			
-		/**************************************************************
-		//TODO add something to indicate that we're working here;
-		*****************************************************************/
+			This.updateDensityMap();
+		}
+
+		
+	    if(!$("#densityMap_show").hasClass("denstiyMapButton_active"))
+	    {
+		    return;
+	    }					
+		var reportsLayers = map.getLayersByName("Reports");
+		for(id in reportsLayers)
+		{		
+			reportsLayers[id].setVisibility(This.showDots);
+		}
+
+		
+	};
+
+	/******************************************************************************************************************
+	* function to initialize the density map with the layers that contain the
+	* geometries of the different areas we're concerned with
+	*/
+	this.initialize = function(ids)
+	{
+
+		// Get Current Start Date
+		
+		This.currentFilter["startDate"] = $("#startDate").val();
+		// Get Current End Date
+		This.currentFilter["endDate"] = $("#endDate").val();
+
+		
+		//hook into the events on the map to make sure the dots stay hidden 
+		map.events.register("addlayer", map, this.handleAddLayerEvents);
+		
 		//if it's already been initialized don't do it again
 		if(this.initialized)
 		{
@@ -198,6 +317,7 @@ function DensityMap()
 	    for(id in This.geometries)
 	    {
 		    This.geometries[id].setVisibility(visible);
+		    This.label_layer.setVisibility(visible);
 	    }	     
 	}; //end enableDensityHandler
 
@@ -205,15 +325,14 @@ function DensityMap()
 	* hanlder for turning on and off the dots
 	*/
 	this.enableDotsHandler = function()
-	{
-		var visible;
+	{		
 	    if ($("input[name='enableDots']:checked").val() == 'dotsEnabled')
 	    {
-			visible = true;
+	    	This.showDots = true;
 	    }
 	    else if ($("input[name='enableDots']:checked").val() == 'dotsDisabled')
 	    {
-	    	visible = false;
+	    	This.showDots = false;
 	    }
 	    
 	    //get the dots layer and turn it off
@@ -224,7 +343,7 @@ function DensityMap()
 		var reportsLayers = map.getLayersByName("Reports");
 		for(id in reportsLayers)
 		{		
-			reportsLayers[id].setVisibility(visible);
+			reportsLayers[id].setVisibility(This.showDots);
 		}
 	    
 	}; //end enableDensityHandler
@@ -305,7 +424,6 @@ DensityMap.switchUI = function(whatToShow)
 		$("#category_switch").show("slow");
 		$("#densityMap_hide").addClass("denstiyMapButton_active");
 		$("#densityMap_show").removeClass("denstiyMapButton_active");
-		
 	}
 	else // density map time
 	{

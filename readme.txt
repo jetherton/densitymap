@@ -16,3 +16,10 @@ Show the density of categories over a geographical area
 2. Activate the plugin.
 
 == Changelog ==
+
+== ToDO ==
+
+* Capture and / or state
+* Verify that it can work both with and with out adminmap
+* use admin map when and/or are set
+* add simple groups support

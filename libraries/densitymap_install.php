@@ -33,9 +33,36 @@ class Densitymap_Install {
 				  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
 				  `category_id` int(11) NOT NULL,
 				  `kml_file` varchar(200) default NULL,
+				  `label_lat` double NOT NULL DEFAULT \'0\',
+  				  `label_lon` double NOT NULL DEFAULT \'0\',
 				  PRIMARY KEY (`id`)
 				) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1');
 		
+		
+		//check and see if the densitymap_geometry table already has the label_lat and label_lon columns. If not make it
+		$result = $this->db->query('DESCRIBE `'.Kohana::config('database.default.table_prefix').'densitymap_geometry`');
+		$has_lat = false;
+		$has_lon = false;
+		foreach($result as $row)
+		{
+			if($row->Field == "label_lat")
+			{
+				$has_lat = true;
+			}
+			if($row->Field == "label_lon")
+			{
+				$has_lon = true;
+			}
+		}
+		
+		if(!$has_lat)
+		{
+			$this->db->query('ALTER TABLE `'.Kohana::config('database.default.table_prefix').'densitymap_geometry` ADD `label_lat` double NOT NULL DEFAULT \'0\'');
+		}
+		if(!$has_lon)
+		{
+			$this->db->query('ALTER TABLE `'.Kohana::config('database.default.table_prefix').'densitymap_geometry` ADD `label_lon` double NOT NULL DEFAULT \'0\'');
+		}			
 		
 	}
 
