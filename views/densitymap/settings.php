@@ -132,7 +132,7 @@
 											<td class="col-1">&nbsp;</td>
 											<td class="col-2">
 												<div class="post">
-													<h4><?php echo $cat_array[$category_id]; ?></h4>
+													<h4><?php echo isset($cat_array[$category_id]) ? $cat_array[$category_id] : "--CATEGORY MISSING--" ; ?></h4>
 												</div>
 												<ul class="info">
 													<?php

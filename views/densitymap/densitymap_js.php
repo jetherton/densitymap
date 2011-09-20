@@ -169,12 +169,15 @@ function DensityMap()
 		if(This.currentFilter["startDate"] != $("#startDate").val() || 
 				This.currentFilter["endDate"] != $("#endDate").val() ||
 				This.currentFilter["gMediaType"] != gMediaType ||
-				This.currentFilter["logicalOperator"] != $("#currentLogicalOperator").val()) 
+				(This.currentFilter["logicalOperator"] != $("#currentLogicalOperator").val() && $("#currentLogicalOperator").val() != undefined)) 
 		{
 			This.currentFilter["startDate"] = $("#startDate").val(); 
 			This.currentFilter["endDate"] = $("#endDate").val();
 			This.currentFilter["gMediaType"] = gMediaType;
-			This.currentFilter["logicalOperator"] = $("#currentLogicalOperator").val();
+			if($("#currentLogicalOperator").val() != undefined)
+			{
+				This.currentFilter["logicalOperator"] = $("#currentLogicalOperator").val();
+			}
 			
 			This.updateDensityMap();
 		}
