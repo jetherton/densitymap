@@ -110,6 +110,12 @@ function DensityMap()
 			'&m=' + This.currentFilter["gMediaType"] +
 			'&lo=' + This.currentFilter["logicalOperator"];
 
+		// Destroy any open popups
+		if (selectedFeature) {
+			onPopupClose();
+		};
+
+
 		//update the geometry
 		$.get('<?php echo url::base(); ?>densitymap/get_styles' + params, this.setCategoryCallBack);
 

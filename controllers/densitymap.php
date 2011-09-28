@@ -304,6 +304,7 @@ class Densitymap_Controller extends Controller
 	{		
 		$i = 0;
 		$category_ids = $this->handleCategoriesParameter();
+		$start_end_paramters = $this->getStartEndParametersStr();
 		//get started 
 		echo '{"type": "FeatureCollection","features":['; 
 			
@@ -324,7 +325,14 @@ class Densitymap_Controller extends Controller
 			$cat_str = implode(",", $cat_ids);
 			
 			//Make the URL for this guy set of data
-			$url = url::base()."reports/index?c=" . $cat_str; /* START AND END TIME*/
+			$url = url::base()."reports/index?dm=" . $geometry_cat_id . $start_end_paramters; 
+			//handle the categories			
+			foreach($category_ids as $cat_id)
+			{
+				$url .= "&c%5B%5D=" . intval($cat_id);	
+			}
+			
+			/* START AND END TIME*/
 			//is it plural or not
 			$reportStr = ($count == 1) ? Kohana::lang("ui_main.report") : Kohana::lang("ui_main.report")."s"; 
 			echo '{"type":"Feature",';  
@@ -338,4 +346,26 @@ class Densitymap_Controller extends Controller
 			
 		echo ']}';
 	}
-}
+	
+	/**
+	 * This hanldes all the Start End possible parameters, other than categories, that could appear here
+	 * Enter description here ...
+	 */
+	private function getStartEndParametersStr()
+	{
+		$params = "";
+		if (isset($_GET['s']) AND !empty($_GET['s']))
+		{
+		    $start_date = intval( $_GET['s']);
+		    $params .= "&s=" . $start_date;
+		}
+
+		if (isset($_GET['e']) AND !empty($_GET['e']))
+		{
+		    $end_date = intval($_GET['e']);
+		    $params .= "&e=" . $end_date;
+		}
+		
+		return $params;
+	}//end method
+}//end class
