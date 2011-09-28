@@ -315,12 +315,17 @@ function DensityMap()
 	    	This.showDensityMap = false;
 	    }
 	    
-	    //loop over layers and turn them off
+	    //loop over layers and turn them off or on
 	    for(id in This.geometries)
 	    {
 		    This.geometries[id].setVisibility(This.showDensityMap);
 	    }	     
 	    This.label_layer.setVisibility(This.showDensityMap);
+
+	 	// Destroy any open popups
+		if (selectedFeature) {
+			onPopupClose();
+		};
 	}; //end enableDensityHandler
 
 	/**
@@ -337,16 +342,17 @@ function DensityMap()
 	    	This.showDots = false;
 	    }
 	    
-	    //get the dots layer and turn it off
-	    //for(id in map.layers)
-	    //{
-		//    console.log(id + " " + map.layers[id].id);
-	    //}
+	    
 		var reportsLayers = map.getLayersByName("Reports");
 		for(id in reportsLayers)
 		{		
 			reportsLayers[id].setVisibility(This.showDots);
 		}
+
+		// Destroy any open popups
+		if (selectedFeature) {
+			onPopupClose();
+		};
 	    
 	}; //end enableDensityHandler
 
@@ -409,7 +415,7 @@ function DensityMap()
 		}
 	};//end drop Cat handler
 
-	/***
+	/******************************************************************************************************
 	* Handles clicks from the UI to switch categories
 	*/
 	this.categoryClickHandler = function()
@@ -528,6 +534,14 @@ function DensityMap()
 	
 	
 }//end density map class
+
+
+
+
+
+
+
+
 
 DensityMap.switchUI = function(whatToShow)
 {
