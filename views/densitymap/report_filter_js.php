@@ -11,11 +11,11 @@ function densityMapRemoveParameterKey()
 /**
 * Toggle the Density Map filters from the reports query
 */
-function densityMapFilterToggle()
+function densityMapFilterToggle(id)
 {
 	if(urlParameters['dm'] == undefined)
 	{
-		urlParameters['dm'] = 18;
+		urlParameters['dm'] = id;
 	}
 	else
 	{

@@ -7,7 +7,7 @@
 <div class="f-densityMap-box">
 	<ul class="filter-list fl-densityMap">
 		<li>
-			<?php echo $geometry_name . " "; print form::checkbox('density_map_filter_checkbox', $geometry_id, TRUE, "onchange='densityMapFilterToggle();'");?>
+			<?php echo $geometry_name . " "; print form::checkbox('density_map_filter_checkbox', $geometry_id, TRUE, "onchange='densityMapFilterToggle(".$geometry_id.");'");?>
 		</li>
 	</ul>
 </div>
