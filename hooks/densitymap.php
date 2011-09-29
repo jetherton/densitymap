@@ -28,7 +28,9 @@ class densitymap {
 	 */
 	public function add()
 	{
-		if(Router::$controller == "main" || Router::$controller == "bigmap")
+		if(Router::$controller == "main" || 
+			Router::$controller == "bigmap" ||
+			Router::$method == "groupmap")
 		{
 			Event::add('ushahidi_action.header_scripts', array($this, '_add_js'));
 			plugin::add_stylesheet("densitymap/css/densitymap");
