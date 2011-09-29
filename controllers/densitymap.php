@@ -72,7 +72,14 @@ class Densitymap_Controller extends Controller
 		{
 			$is_all_categories = true;
 		}
-		return $category_ids;
+		
+		$clean_array = array();
+		foreach($category_ids as $key=>$val)
+		{
+			$clean_array[$key] = mysql_real_escape_string($val);
+		}
+		
+		return $clean_array;
 	}
 	
 	/***********************************************************************************************************
@@ -118,6 +125,20 @@ class Densitymap_Controller extends Controller
 		return $where_text;
 	}
 	
+	/***********************************************************************************************************
+	 * Handles all the parameters that make the Simple Groups Plugin Work
+	 * Enter description here ...
+	 */
+	private function handleSimpleGroupsIdParameters()
+	{
+		
+		if (isset($_GET['sgid']) AND !empty($_GET['sgid']) AND intval($_GET['sgid']) > 0)
+		{
+			return intval($_GET['sgid']);
+		}
+		return null;
+	}
+	
 	
 	/***********************************************************************************************************
 	 * Figures out what the category array should be
@@ -128,12 +149,11 @@ class Densitymap_Controller extends Controller
 	private function get_geometry_specific_category_list($geometry_id, $category_ids)
 	{
 		//first check and see if we're dealing with all categories
-		if(count($category_ids) == 1 AND $category_ids[0] == 0)
+		if(count($category_ids) == 1 AND $category_ids[0] == "0")
 		{
 			$category_ids[0] = $geometry_id;
 			return $category_ids;
 		}
-		
 		//Second check and see if the $geometry's cat is already in there
 		$is_in_there = false;
 		foreach($category_ids as $cat)
@@ -160,6 +180,7 @@ class Densitymap_Controller extends Controller
 		$logical_operator = $this->handleLogicalOperatorParamter();
 		$category_ids = $this->handleCategoriesParameter();
 		$where_text = $this->handleWhereTextParamters();
+		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
 		
 		$category_count = count($category_ids);
 		//loop through each of the geometries and see how many reports fall under both the geometry category and
@@ -168,14 +189,29 @@ class Densitymap_Controller extends Controller
 		$geometries_and_counts = array();
 		foreach($geometries as $geometry)
 		{
+			$joins = array();
+			$group_where = "";
+			$sg_category_to_table_mapping = array();
+			//if there are simple groups at play:
+			if($simple_groups_id != null AND $simple_groups_id != 0)
+			{
+					$group_where = " AND ( ".$this->table_prefix."simplegroups_groups_incident.simplegroups_groups_id = ".$simple_groups_id.") ";					
+					$joins = groups::get_joins_for_groups($category_ids);
+					$sg_category_to_table_mapping = groups::get_category_to_table_mapping();
+			}
+			
 			//create a category array just for this geometry
 			$cats_and_geometry = $this->get_geometry_specific_category_list($geometry->category_id, $category_ids);
 			//unleash the power of admin map
 			$reports = adminmap_reports::get_reports_list_by_cat(
 				$cats_and_geometry, 
 				"incident.incident_active = 1 ", 
-				$where_text, 
-				$logical_operator);
+				$where_text . " ". $group_where, 
+				$logical_operator,
+				"incident.incident_date",
+				"asc",
+				$joins,
+				$sg_category_to_table_mapping);
 				
 			//figure out how many categories we need for a valid match
 			$minimum_category_count_needed = 2;
@@ -305,6 +341,7 @@ class Densitymap_Controller extends Controller
 		$i = 0;
 		$category_ids = $this->handleCategoriesParameter();
 		$start_end_paramters = $this->getStartEndParametersStr();
+		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
 		//get started 
 		echo '{"type": "FeatureCollection","features":['; 
 			
@@ -322,14 +359,25 @@ class Densitymap_Controller extends Controller
 			$count = $geometries_and_counts[$geometry->id];
 			$cat_ids = $this->get_geometry_specific_category_list($geometry_cat_id, $category_ids);
 			//make a string of the categories
-			$cat_str = implode(",", $cat_ids);
+			$cat_str = "";
+			$i = 0;
+			foreach($cat_ids as $cat_id)
+			{
+				$i++;
+				if($i>1){$cat_str .= ",";}
+				$cat_str .= '"' . $cat_id . '"';
+			}
 			
 			//Make the URL for this guy set of data
 			$url = url::base()."reports/index?dm=" . $geometry_cat_id . $start_end_paramters; 
 			//handle the categories			
 			foreach($category_ids as $cat_id)
 			{
-				$url .= "&c%5B%5D=" . intval($cat_id);	
+				$url .= "&c%5B%5D=" . mysql_real_escape_string($cat_id);	
+			}
+			if($simple_groups_id != null AND intval($simple_groups_id) != 0)
+			{
+				$url .= "&sgid=" . $simple_groups_id;
 			}
 			
 			/* START AND END TIME*/

@@ -116,9 +116,17 @@ class densitymap {
 	
 	public function _add_js()
 	{
+		$group_id = 0;
+		//handle the pages where a map might appear for a group
+		if(Router::$method == "groupmap")
+		{
+			$group_id = Router::$arguments[0];
+		}
+		
 		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		$view = new View('densitymap/densitymap_js');
 		$view->geometries = $geometries;
+		$view->group_id = $group_id;
 		$view->render(true);
 	}
 }

@@ -19,6 +19,7 @@ function DensityMap()
 	this.currentFilter["logicalOperator"] = "or";
 	this.currentFilter["categories"] = new Array();  
 	this.currentFilter["gMediaType"] = 0;
+	this.simpleGroupsId = <?php echo $group_id; ?>;
 
 	
 	
@@ -61,6 +62,18 @@ function DensityMap()
 			return true;
 		} 
 		return false;
+	};
+
+	/**********************************************************************************************************
+	* Tells us if we're in Simple Groups world
+	*/
+	this.usingSimpleGroups = function()
+	{
+		if(This.simpleGroupsId == 0)
+		{
+			return false;
+		} 
+		return true;
 	};
 
 	/******************************************************************************************************
@@ -109,6 +122,12 @@ function DensityMap()
 			'&e=' + This.currentFilter["endDate"] +
 			'&m=' + This.currentFilter["gMediaType"] +
 			'&lo=' + This.currentFilter["logicalOperator"];
+
+		//let them know that we're using simple groups
+		if (this.usingSimpleGroups())
+		{
+			params += "&sgid=" + This.simpleGroupsId;
+		}
 
 		// Destroy any open popups
 		if (selectedFeature) {
