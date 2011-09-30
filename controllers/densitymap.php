@@ -342,6 +342,7 @@ class Densitymap_Controller extends Controller
 		$category_ids = $this->handleCategoriesParameter();
 		$start_end_paramters = $this->getStartEndParametersStr();
 		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
+		$logical_operator = $this->handleLogicalOperatorParamter();
 		//get started 
 		echo '{"type": "FeatureCollection","features":['; 
 			
@@ -367,9 +368,14 @@ class Densitymap_Controller extends Controller
 				if($i>1){$cat_str .= ",";}
 				$cat_str .= '"' . $cat_id . '"';
 			}
+			$logical_operator_params = "";
+			if($logical_operator == "and")
+			{
+				$logical_operator_params = "&lo=and";	
+			}
 			
 			//Make the URL for this guy set of data
-			$url = url::base()."reports/index?dm=" . $geometry_cat_id . $start_end_paramters; 
+			$url = url::base()."reports/index?dm=" . $geometry_cat_id . $start_end_paramters.$logical_operator_params; 
 			//handle the categories			
 			foreach($category_ids as $cat_id)
 			{

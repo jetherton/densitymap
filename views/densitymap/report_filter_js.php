@@ -31,7 +31,10 @@ $(document).ready(function() {
 	var categories = [<?php echo $cat_list; ?>];
 	for( i in categories)
 	{
-		$("#filter_link_cat_" + categories[i]).trigger("click");
+		if(!$("#filter_link_cat_" + categories[i]).hasClass("selected"))
+		{
+			$("#filter_link_cat_" + categories[i]).trigger("click");
+		}
 	}
 	$("#reset_all_filters").click(function(){densityMapRemoveParameterKey();});
 });
