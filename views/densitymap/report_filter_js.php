@@ -33,7 +33,7 @@ $(document).ready(function() {
 	{
 		$("#filter_link_cat_" + categories[i]).trigger("click");
 	}
-
+	$("#reset_all_filters").click(function(){densityMapRemoveParameterKey();});
 });
 
 </script>
