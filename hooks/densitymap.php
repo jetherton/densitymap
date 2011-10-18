@@ -43,6 +43,10 @@ class densitymap {
 			
 			Event::add('ushahidi_action.header_scripts', array($this, '_add_report_filter_js'));
 		}
+		if(Router::$controller == "json") //any time the map is brought up
+		{
+			Event::add('ushahidi_filter.fetch_incidents_set_params', array($this,'_add_incident_filter'));
+		}
 	}
 	
 	/**

@@ -445,6 +445,7 @@ function DensityMap()
 			var ids = [<?php $i = 0; foreach($geometries as $geometry){$i++; if($i>1){echo",";}echo '"'.$geometry->id.'"';}?>];
 			This.initialize(ids);
 			This.initialized = true;
+			//etherton add code here
 		}
 	
 		var catID = this.id.substring(14);
@@ -577,6 +578,10 @@ DensityMap.switchUI = function(whatToShow)
 		$("#category_switch").hide("slow");		
 		$("#densityMap_show").addClass("denstiyMapButton_active");
 		$("#densityMap_hide").removeClass("denstiyMapButton_active");		
+		if(densityMap.initialized == false)
+		{
+			$("a#densityMapcat_0").click();
+		}
 	}
 };// end switchUI.	
 
