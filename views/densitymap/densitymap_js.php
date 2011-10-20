@@ -263,7 +263,7 @@ function DensityMap()
 	};// end initialize method
 
 
-	/**
+	/**********************************************************************************************************************
 	* creates the UI for the density map based on the existing categories UI
 	*/
 	this.setupUI = function(){
@@ -283,6 +283,7 @@ function DensityMap()
 
 		var scale = '<div id="densityMapScale"><span id="densityMapScaleMin"></span><span id="densityMapScaleMax"></span></div>';
 		$("#densityMapCategory").append("<?php echo Kohana::lang("densitymap.density_map"); ?>:"+scale);
+
 		//copy the category list from the category_switch UL		
 		$("#category_switch").clone().appendTo("#densityMapCategory");
 		$("div#densityMapCategory a[id^='cat_']").each( function(index) {
@@ -299,7 +300,8 @@ function DensityMap()
 		});
 
 		//are we using admin map plugin map?
-		if(this.usingAdminMap())
+		//if(this.usingAdminMap())
+		if(true)
 		{
 			$("div#densityMapCategory a[id^='drop_cat_']").each( function(index) {
 				$(this).attr("id","densityMap_drop_cat_" + $(this).attr("id").substring(9));
