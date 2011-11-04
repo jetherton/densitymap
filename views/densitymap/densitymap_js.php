@@ -117,7 +117,17 @@ function DensityMap()
 	*/
 	this.updateDensityMap = function()
 	{
-		var params = "?c=" + This.currentFilter["categories"].join(",") +
+		var categories = "";
+		for(i = 0; i < This.currentFilter["categories"].length; i++)
+		{
+			if(i>0)
+			{
+				categories += "&";
+			}
+			categories += "c%5B%5D=" + This.currentFilter["categories"][i]; 
+		}		
+		//var params = "?c=" + This.currentFilter["categories"].join(",") +
+		var params = "?" + categories +
 			'&s=' + This.currentFilter["startDate"] +
 			'&e=' + This.currentFilter["endDate"] +
 			'&m=' + This.currentFilter["gMediaType"] +

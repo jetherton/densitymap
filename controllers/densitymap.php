@@ -26,6 +26,7 @@ class Densitymap_Controller extends Controller
 		parent::__construct();
 	
 		$this->table_prefix = Kohana::config('database.default.table_prefix');
+		
 	}
 	
 	/***********************************************************************************************************
@@ -54,9 +55,13 @@ class Densitymap_Controller extends Controller
 		if( isset($_GET['c']) AND ! empty($_GET['c']) )
 		{
 			//check if there are any ',' in the category
-			if((strpos($_GET['c'], ",")===false) && is_numeric($_GET['c']))
+			if (is_array($_GET['c']))
 			{
-				$category_ids = array($_GET['c']);	
+				$category_ids = $_GET['c'];	
+			}			
+			elseif((strpos($_GET['c'], ",")===false) && is_numeric($_GET['c']))
+			{
+				$category_ids = $_GET['c'];
 			}
 			else
 			{
@@ -177,101 +182,18 @@ class Densitymap_Controller extends Controller
 	 */
 	private function get_counts()
 	{
-		$logical_operator = $this->handleLogicalOperatorParamter();
-		$category_ids = $this->handleCategoriesParameter();
-		$where_text = $this->handleWhereTextParamters();
-		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
-		
-		$category_count = count($category_ids);
+	
 		//loop through each of the geometries and see how many reports fall under both the geometry category and
 		//the dependent
 		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		$geometries_and_counts = array();
 		foreach($geometries as $geometry)
 		{
-			$joins = array();
-			$group_where = "";
-			$sg_category_to_table_mapping = array();
-			//if there are simple groups at play:
-			if($simple_groups_id != null AND $simple_groups_id != 0)
-			{
-					$group_where = " AND ( ".$this->table_prefix."simplegroups_groups_incident.simplegroups_groups_id = ".$simple_groups_id.") ";					
-					$joins = groups::get_joins_for_groups($category_ids);
-					$sg_category_to_table_mapping = groups::get_category_to_table_mapping();
-			}
-			
-			//create a category array just for this geometry
-			$cats_and_geometry = $this->get_geometry_specific_category_list($geometry->category_id, $category_ids);
-			//unleash the power of admin map
-			$reports = adminmap_reports::get_reports_list_by_cat(
-				$cats_and_geometry, 
-				"incident.incident_active = 1 ", 
-				$where_text . " ". $group_where, 
-				$logical_operator,
-				"incident.incident_date",
-				"asc",
-				$joins,
-				$sg_category_to_table_mapping);
+			$_GET['dm']=$geometry->category_id;
+			$reports = reports::fetch_incidents();			          
 				
-			//figure out how many categories we need for a valid match
-			$minimum_category_count_needed = 2;
-			if(in_array($geometry->category_id, $category_ids))
-			{
-				$minimum_category_count_needed = 1;	
-			}
-
-			//echo "<br/><br/>Geometry: " . $geometry->category_id . " cats needed: " . $minimum_category_count_needed . "<br/>";
-			
-			//now loop over these and see where there was an actual match and create the count
-			$count = 0;
-			$last_report_id = null;
-			$report_category_count = 0;
-			$found_geometry_cat_id = false;
-			$is_first = true;	
-			//echo "<br/><br/><br/>";
-			if(strtolower($logical_operator) == 'and' OR count($cats_and_geometry) == 1)
-			{
-				$geometries_and_counts[$geometry->id] = count($reports);
-				//echo "COUNT  ". count($reports) . "<br/>";
-			}
-			else
-			{		
-				foreach($reports as $report)
-				{				
-					//We need to check every different set of IDs, do they contain at least one $geometry->category_id
-					//if there are two mappings with the same incident_id then we made a positive hit
-					
-					if($report->id != $last_report_id && !$is_first) //we've got a new id
-					{
-						if($found_geometry_cat_id AND $report_category_count >= $minimum_category_count_needed )
-						{
-							$count++;
-							//echo "COUNT +1 <br/>";
-						}
-						//reset everything
-						$found_geometry_cat_id = false;
-						$report_category_count = 0;
-					}
-					$last_report_id = $report->id;
-					//echo "Report ID: " . $report->id . " Cat ID: " . $report->cat_id . " GeometryID: " . $geometry->category_id . "<br/>";	
-				
-					if($report->cat_id == $geometry->category_id) 
-					{
-						$found_geometry_cat_id = true;
-					}
-					$report_category_count++;
-					$is_first = false;	
-				}//end loop over all the reports
-				
-				//to catch the last run of the loop
-				if($found_geometry_cat_id && $report_category_count >= $minimum_category_count_needed )
-				{
-					$count++;
-					//echo "COUNT +1 <br/>";
-				}
-				$geometries_and_counts[$geometry->id] = $count;
-			}//end if it's or
-		}//end of looping over all the geometries
+			$geometries_and_counts[$geometry->id] = count($reports);
+		}//end foreach loop over all the geometries
 		
 		return $geometries_and_counts;
 	} 
@@ -322,9 +244,13 @@ class Densitymap_Controller extends Controller
 				$border_color = $border_color . "ff". $border_color;
 				$results[$id] = array("color"=>$color_str, "count"=>$count, "border_color"=>$border_color);
 			}
-			else
+			elseif($max == 0) //if it's all zeros return white
 			{
 				$results[$id] = array("color"=>"ffffff", "count"=>$count, "border_color"=>"888888");
+			}
+			else //if it's all the same non-zero value, return green
+			{
+				$results[$id] = array("color"=>"00ff00", "count"=>$count, "border_color"=>"888888");
 			}
 		}
 		$results["max"] = $max;
@@ -339,10 +265,9 @@ class Densitymap_Controller extends Controller
 	public function get_labels()
 	{		
 		$i = 0;
+		
 		$category_ids = $this->handleCategoriesParameter();
-		$start_end_paramters = $this->getStartEndParametersStr();
-		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
-		$logical_operator = $this->handleLogicalOperatorParamter();
+		
 		//get started 
 		echo '{"type": "FeatureCollection","features":['; 
 			
@@ -356,8 +281,10 @@ class Densitymap_Controller extends Controller
 			{
 				echo ",";
 			}
-			$geometry_cat_id = $geometry->category_id;
+			
+			$geometry_cat_id = $geometry->category_id;			
 			$count = $geometries_and_counts[$geometry->id];
+			
 			$cat_ids = $this->get_geometry_specific_category_list($geometry_cat_id, $category_ids);
 			//make a string of the categories
 			$cat_str = "";
@@ -368,24 +295,8 @@ class Densitymap_Controller extends Controller
 				if($i>1){$cat_str .= ",";}
 				$cat_str .= '"' . $cat_id . '"';
 			}
-			$logical_operator_params = "";
-			if($logical_operator == "and")
-			{
-				$logical_operator_params = "&lo=and";	
-			}
-			
-			//Make the URL for this guy set of data
-			$url = url::base()."reports/index?dm=" . $geometry_cat_id . $start_end_paramters.$logical_operator_params; 
-			//handle the categories			
-			foreach($category_ids as $cat_id)
-			{
-				$url .= "&c%5B%5D=" . mysql_real_escape_string($cat_id);	
-			}
-			if($simple_groups_id != null AND intval($simple_groups_id) != 0)
-			{
-				$url .= "&sgid=" . $simple_groups_id;
-			}
-			
+		
+			$url = 'reports/index?dm=' . $geometry_cat_id .'&' . $_SERVER['QUERY_STRING'];
 			/* START AND END TIME*/
 			//is it plural or not
 			$reportStr = ($count == 1) ? Kohana::lang("ui_main.report") : Kohana::lang("ui_main.report")."s"; 
