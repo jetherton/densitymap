@@ -261,8 +261,10 @@ function DensityMap()
 		for(id in ids)
 		{
 			//this may not work in IE see http://www.lejnieks.com/2008/08/21/passing-arguments-to-javascripts-settimeout-method-using-closures/ for more info
-			setTimeout(this.loadLayer(ids[id]), wait);
-			wait = wait + 300;
+			//doesn't work in FireFox, so annoying
+			//setTimeout(This.loadLayer(ids[id]), wait);
+			//wait = wait + 300;
+			This.loadLayer(ids[id])
 		}
 
 		//show the options
