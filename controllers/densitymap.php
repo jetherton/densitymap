@@ -351,13 +351,19 @@ class Densitymap_Controller extends Controller
 		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		foreach($geometries as $geometry)
 		{
+			$count = $geometries_and_counts[$geometry->id];
+			
+			if($count == 0)
+			{
+				continue;
+			}
+			
 			$i++;
 			if($i > 1)
 			{
 				echo ",";
 			}
-			$geometry_cat_id = $geometry->category_id;
-			$count = $geometries_and_counts[$geometry->id];
+			$geometry_cat_id = $geometry->category_id;			
 			$cat_ids = $this->get_geometry_specific_category_list($geometry_cat_id, $category_ids);
 			//make a string of the categories
 			$cat_str = "";
@@ -385,6 +391,41 @@ class Densitymap_Controller extends Controller
 			{
 				$url .= "&sgid=" . $simple_groups_id;
 			}
+			$fontsize = "12px";
+			$radius = "10px";
+			$strokewidth = "1";
+			if($count > 1000)
+			{
+				$fontsize = "23px";
+				$radius = "23px";
+				$strokewidth = "22";
+			}
+			elseif($count > 500)
+			{
+				$fontsize = "20px";
+				$radius = "20px";
+				$strokewidth = "20";
+			}
+			elseif($count > 100)
+			{
+				$fontsize = "18px";
+				$radius = "18px";
+				$strokewidth = "15";
+			}
+			elseif($count > 10)
+			{
+				$fontsize = "14px";
+				$radius = "14px";
+				$strokewidth = "10";
+			}
+			elseif($count >= 2)
+			{
+				$fontsize = "12px";
+				$radius = "12px";
+				$strokewidth = "4";
+			}
+			
+			
 			
 			/* START AND END TIME*/
 			//is it plural or not
@@ -393,7 +434,7 @@ class Densitymap_Controller extends Controller
 			echo '"properties": {"name":"<a href=\''.$url.'\'> '.$count . ' ' . $reportStr. '</a>","link": "'. $url .'",';
 			echo '"category":[' . $cat_str . '],'; 
 			echo '"color": "CC0000", "icon": "", "thumb": "", "timestamp": "0",'; 
-			echo '"count": "' . $count . '"},"geometry":'; 
+			echo '"count": "' . $count . '", "fontsize":"' . $fontsize.'", "radius":"'.$radius.'", "strokewidth":"'.$strokewidth.'"},"geometry":'; 
 			echo '{"type":"Point", "coordinates":['.$geometry->label_lon.','.$geometry->label_lat.']}}';
 		}
 				

@@ -35,17 +35,17 @@ function DensityMap()
 			});
 
 	this.labelStyle = new OpenLayers.Style({
-	  	  pointRadius: "8",
-				fillColor: "#aaaaaa",
-				fillOpacity: "0.0",
-				strokeColor: "#888888",
-				strokeWidth: 2,
-				strokeOpacity: "0.0",
+		pointRadius: "${radius}",
+				fillColor: "#0000aa",
+				fillOpacity: "0.3",
+				strokeColor: "#0000aa",
+				strokeWidth: "${strokewidth}",
+				strokeOpacity: "0.2",
 				graphicZIndex: 1,
 				label:"${count}",
 				fontWeight: "bold",
 				fontColor: "#000000",
-				fontSize: "20px"
+				fontSize: "${fontsize}"
 			});
 
 
@@ -57,6 +57,7 @@ function DensityMap()
 	{
 		if(this.controller == "adminmap" || 
 				this.controller == "bigmap" ||
+				this.controller == "main" ||
 				this.controller == "simplegroups")
 		{
 			return true;
@@ -274,8 +275,8 @@ function DensityMap()
 		buttons += '<td><input type="radio" value="densityEnabled" name="enableDensity"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 		buttons += '<input type="radio" value="densityDisabled" name="enableDensity"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
 		buttons += '<tr><td><?php echo Kohana::lang("densitymap.show_dots");?></td>';
-		buttons += '<td><input type="radio" value="dotsEnabled" name="enableDots"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-		buttons += '<input type="radio" value="dotsDisabled" name="enableDots"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
+		buttons += '<td><input type="radio" value="dotsEnabled" name="enableDots" id="DM_enable_dots"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		buttons += '<input type="radio" value="dotsDisabled" name="enableDots" id="DM_disable_dots"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
 		buttons += '</table></div>';  
 		buttons += '</div>'; 
 		$("#category_switch").before(buttons);
@@ -293,7 +294,7 @@ function DensityMap()
 			$(this).attr("id","");
 		});
 
-		$("div#densityMapCategory ul")
+		//$("div#densityMapCategory ul") I don't think this should be here
 		
 		$("div#densityMapCategory div[id^='child_']").each( function(index) {
 			$(this).attr("id","densityMapcatChild_" + $(this).attr("id").substring(6));
@@ -320,6 +321,17 @@ function DensityMap()
 		//hide some things
 		$("#densityMapCategory").hide();
 		$("#densityMapScale").hide();
+
+		//if the user clicks on a dots category, turn dots on:
+		$("a[id^='cat_']").click(function()
+		{
+			//check the dots disabled radio button
+			$("input#DM_disable_dots").attr('checked', false);
+			$("input#DM_enable_dots").attr('checked', true);
+			This.enableDotsHandler();
+		});
+
+		
 	}; //end setup UI
 
 	/**
