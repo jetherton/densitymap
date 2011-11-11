@@ -118,6 +118,9 @@ function DensityMap()
 	*/
 	this.updateDensityMap = function()
 	{
+		
+		
+		
 		var params = "?c=" + This.currentFilter["categories"].join(",") +
 			'&s=' + This.currentFilter["startDate"] +
 			'&e=' + This.currentFilter["endDate"] +
@@ -305,8 +308,8 @@ function DensityMap()
 		buttons += '<a id="densityMap_show" class="densityMap_buttons" href="#" onclick="DensityMap.switchUI(\'DensityMap\'); return false;"> <?php echo Kohana::lang("densitymap.density_map"); ?></a>';
 		buttons += '<div class="densityMap_options"><table><tr>';
 		buttons += '<td><?php echo Kohana::lang("densitymap.show_densitymap");?></td>';
-		buttons += '<td><input type="radio" value="densityEnabled" name="enableDensity"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-		buttons += '<input type="radio" value="densityDisabled" name="enableDensity"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
+		buttons += '<td><input type="radio" value="densityEnabled" name="enableDensity" id="DM_enable_DM"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		buttons += '<input type="radio" value="densityDisabled" name="enableDensity" id="DM_disable_DM"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
 		buttons += '<tr><td><?php echo Kohana::lang("densitymap.show_dots");?></td>';
 		buttons += '<td><input type="radio" value="dotsEnabled" name="enableDots" id="DM_enable_dots"/> <?php echo Kohana::lang("densitymap.yes");?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 		buttons += '<input type="radio" value="dotsDisabled" name="enableDots" id="DM_disable_dots"/> <?php echo Kohana::lang("densitymap.no");?></td></tr>';
@@ -359,9 +362,12 @@ function DensityMap()
 		$("a[id^='cat_']").click(function()
 		{
 			//check the dots disabled radio button
-			$("input#DM_disable_dots").attr('checked', false);
-			$("input#DM_enable_dots").attr('checked', true);
-			This.enableDotsHandler();
+			if ($("input[name='enableDots']:checked").val() == 'dotsDisabled')
+			{
+				$("input#DM_disable_dots").attr('checked', false);
+				$("input#DM_enable_dots").attr('checked', true);
+				This.enableDotsHandler();
+			}
 		});
 
 		
@@ -594,6 +600,15 @@ function DensityMap()
 		}//end if we're using big map
 		// Destroy any open popups
 		//onPopupClose();
+
+		//make sure the show density map is set to on if the user clicks a density map category
+		if ($("input[name='enableDensity']:checked").val() == 'densityDisabled')
+		{
+			$("input#DM_disable_DM").attr('checked', false);
+			$("input#DM_enable_DM").attr('checked', true);
+			This.enableDensityHandler();
+		}
+		
 		This.updateDensityMap();
 		return false;
 	};//end category click handler
