@@ -164,6 +164,39 @@ function DensityMap()
 			"featureselected": onFeatureSelect,
 			"featureunselected": onFeatureUnselect
 		});
+
+
+			
+		var timeInterval = "";
+		var startDate = This.currentFilter["startDate"];
+		var endDate = This.currentFilter["endDate"];
+		var startTime = new Date(startDate * 1000);
+		var endTime = new Date(endDate * 1000);
+		// plot hourly incidents when period is within 2 days
+		if ((endTime - startTime) / (1000 * 60 * 60 * 24) <= 3)
+		{
+			timeInterval = "&i=hour";
+		}
+		//less than 2 weeks
+		else if ((endTime - startTime) / (1000 * 60 * 60 * 24) <= 124)
+		{
+			timeInterval = "&i=day";
+		}
+			
+		//update the timeline to reflect what the density map says:
+		$.getJSON("<?php echo url::base(); ?>bigmap_json/timeline/"+This.currentFilter["categories"].join(",")+ 
+				",?lo="+ This.currentFilter["logicalOperator"]+timeInterval, function(data) {
+					graphData = data[0];
+									
+
+					gTimeline = $.timeline({categoryId: currentCat,
+						startTime: new Date(startDate * 1000),
+					    endTime: new Date(endDate * 1000), mediaType: gMediaType,
+						markerOptions: gMarkerOptions,
+						graphData: graphData
+					});
+					gTimeline.plot();
+				});
 		
 	};
 
