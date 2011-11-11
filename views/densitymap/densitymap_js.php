@@ -573,6 +573,15 @@ function DensityMap()
 		}//end if we're using big map
 		// Destroy any open popups
 		//onPopupClose();
+
+		//make sure the show density map is set to on if the user clicks a density map category
+		if ($("input[name='enableDensity']:checked").val() == 'densityDisabled')
+		{
+			$("input#DM_disable_DM").attr('checked', false);
+			$("input#DM_enable_DM").attr('checked', true);
+			This.enableDensityHandler();
+		}
+		
 		This.updateDensityMap();
 		return false;
 	};//end category click handler
