@@ -305,7 +305,6 @@ function DensityMap()
 			$(this).attr("id","");
 		});
 
-		$("div#densityMapCategory ul")
 		
 		$("div#densityMapCategory div[id^='child_']").each( function(index) {
 			$(this).attr("id","densityMapcatChild_" + $(this).attr("id").substring(6));
@@ -332,6 +331,16 @@ function DensityMap()
 		//hide some things
 		$("#densityMapCategory").hide();
 		$("#densityMapScale").hide();
+
+		//if the user clicks on a dots category, turn dots on:
+		$("a[id^='cat_']").click(function()
+		{
+			//check the dots disabled radio button
+			$("input#DM_disable_dots").attr('checked', false);
+			$("input#DM_enable_dots").attr('checked', true);
+			This.enableDotsHandler();
+		});
+		
 	}; //end setup UI
 
 	/**
