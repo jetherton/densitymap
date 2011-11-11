@@ -336,9 +336,12 @@ function DensityMap()
 		$("a[id^='cat_']").click(function()
 		{
 			//check the dots disabled radio button
-			$("input#DM_disable_dots").attr('checked', false);
-			$("input#DM_enable_dots").attr('checked', true);
-			This.enableDotsHandler();
+			if ($("input[name='enableDots']:checked").val() == 'dotsDisabled')
+			{
+				$("input#DM_disable_dots").attr('checked', false);
+				$("input#DM_enable_dots").attr('checked', true);
+				This.enableDotsHandler();
+			}
 		});
 		
 	}; //end setup UI
