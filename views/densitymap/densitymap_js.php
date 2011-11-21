@@ -281,15 +281,10 @@ function DensityMap()
 			return;
 		}
 
-		//we had some issues with the layers randommly not loading and I think it's because 
-		//OSM isn't thread safe, so we use the wait to stagger the loading of layers.
-		wait = 300;			
 		//loop over the geometries in the system and create layers for them
 		for(id in ids)
 		{
-			//this may not work in IE see http://www.lejnieks.com/2008/08/21/passing-arguments-to-javascripts-settimeout-method-using-closures/ for more info
-			setTimeout(this.loadLayer(ids[id]), wait);
-			wait = wait + 300;
+			this.loadLayer(ids[id]);
 		}
 
 		//show the options
