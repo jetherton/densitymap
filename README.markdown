@@ -1,16 +1,16 @@
-Density Map Ushahidi Plugin
+Density Map - Ushahidi Plugin
 =================
 
 About
 ---------
-name: Density Map
-website: https://github.com/jetherton/densitymap
-description: Create a density map out of the usuaul Ushahidi map
-version: 1.0
-requires: 2.1
-tested up to: 2.1
-author: John Etherton
-author website: http://ethertontech.com
+* name: Density Map
+* website: https://github.com/jetherton/densitymap
+* description: Create a density map out of the usuaul Ushahidi map
+* version: 1.0
+* requires: 2.1
+* tested up to: 2.1
+* author: John Etherton
+* author website: http://ethertontech.com
 
 Description
 -----------------
