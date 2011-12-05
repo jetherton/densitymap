@@ -12,14 +12,14 @@
  */
 
 	$lang = array(		
-		"density_map"=>"Density Map",
-		"density_map_settings" => "Density Map Settings",
+		"density_map"=>"Provincial Map",
+		"density_map_settings" => "Provincial Map Settings",
 		"geometry_has_been" => "Geometry has been added",
 		"dots" => "Dots",
 		"min"=>"Min",
 		"max"=>"Max",
-		"show_densitymap"=>"Show Density Map:",
-		"show_dots"=>"Show Dots:",
+		"show_densitymap"=>"Show Provincial Map:",
+		"show_dots"=>"Show Clustered Map:",
 		"yes"=>"Yes",
 		"no"=>"No",
 		"label_lat_lon"=>"Label Latitude and Longitude",
