@@ -349,8 +349,16 @@ class Densitymap_Controller extends Controller
 		$geometries_and_counts = $this->get_counts();
 		
 		$geometries = ORM::factory("densitymap_geometry")->find_all();
-		foreach($geometries as $geometry)
+		foreach($geometries as $geometry)		
 		{
+			//get the category so we can put a name in the info window			
+			//figure out what translation to show:
+			// Get locale
+			$l = Kohana::config('locale.language.0');
+			// Check for localization of child category
+			$display_title = Category_Lang_Model::category_title($geometry->category_id,$l);
+			
+			
 			$count = $geometries_and_counts[$geometry->id];
 			
 			if($count == 0)
@@ -429,9 +437,10 @@ class Densitymap_Controller extends Controller
 			
 			/* START AND END TIME*/
 			//is it plural or not
+			
 			$reportStr = ($count == 1) ? Kohana::lang("ui_main.report") : Kohana::lang("ui_main.report")."s"; 
 			echo '{"type":"Feature",';  
-			echo '"properties": {"name":"<a href=\''.$url.'\'> '.$count . ' ' . $reportStr. '</a>","link": "'. $url .'",';
+			echo '"properties": {"name":"<a href=\''.$url.'\'> '.$display_title .':<br/>'.$count . ' ' . $reportStr. '</a>","link": "'. $url .'",';
 			echo '"category":[' . $cat_str . '],'; 
 			echo '"color": "CC0000", "icon": "", "thumb": "", "timestamp": "0",'; 
 			echo '"count": "' . $count . '", "fontsize":"' . $fontsize.'", "radius":"'.$radius.'", "strokewidth":"'.$strokewidth.'"},"geometry":'; 
