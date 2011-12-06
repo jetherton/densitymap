@@ -356,7 +356,12 @@ class Densitymap_Controller extends Controller
 			// Get locale
 			$l = Kohana::config('locale.language.0');
 			// Check for localization of child category
+			
 			$display_title = Category_Lang_Model::category_title($geometry->category_id,$l);
+			if($display_title == "")
+			{
+				$display_title = ORM::factory('category')->where('id', $geometry->category_id)->find()->category_title;
+			}
 			
 			
 			$count = $geometries_and_counts[$geometry->id];
