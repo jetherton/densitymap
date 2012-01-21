@@ -177,101 +177,95 @@ class Densitymap_Controller extends Controller
 	 */
 	private function get_counts()
 	{
+		//initialize some variables
+		$geometries_and_counts = array();
 		$logical_operator = $this->handleLogicalOperatorParamter();
 		$category_ids = $this->handleCategoriesParameter();
-		$where_text = $this->handleWhereTextParamters();
-		$simple_groups_id = $this->handleSimpleGroupsIdParameters();
 		
-		$category_count = count($category_ids);
-		//loop through each of the geometries and see how many reports fall under both the geometry category and
-		//the dependent
-		$geometries = ORM::factory("densitymap_geometry")->find_all();
-		$geometries_and_counts = array();
+		//so first we want to get a list of IDs of the categories that corespond to a ID
+		$geo_where = "";
+		$geometries = ORM::factory("densitymap_geometry")->find_all();		
+		$i = 0;
+		//also setup this look up to use later
+		$cat_to_geo_id = array();
 		foreach($geometries as $geometry)
 		{
-			$joins = array();
-			$group_where = "";
-			$sg_category_to_table_mapping = array();
-			//if there are simple groups at play:
-			if($simple_groups_id != null AND $simple_groups_id != 0)
-			{
-					$group_where = " AND ( ".$this->table_prefix."simplegroups_groups_incident.simplegroups_groups_id = ".$simple_groups_id.") ";					
-					$joins = groups::get_joins_for_groups($category_ids);
-					$sg_category_to_table_mapping = groups::get_category_to_table_mapping();
-			}
+			$i++;
+			if($i > 1)
+			{$geo_where .= " OR ";}
+			$geo_where .= 'ic1.category_id = '.$geometry->category_id;
+			$cat_to_geo_id[$geometry->category_id] = $geometry->id;
+		}
 			
-			//create a category array just for this geometry
-			$cats_and_geometry = $this->get_geometry_specific_category_list($geometry->category_id, $category_ids);
-			//unleash the power of admin map
-			$reports = adminmap_reports::get_reports_list_by_cat(
-				$cats_and_geometry, 
-				"incident.incident_active = 1 ", 
-				$where_text . " ". $group_where, 
-				$logical_operator,
-				"incident.incident_date",
-				"asc",
-				$joins,
-				$sg_category_to_table_mapping);
+		
+		
+		//start setting up the SQL to find out what our counts will be
+		$table_prefix = Kohana::config('database.default.table_prefix');
+		$sql = 'select count(incident_id) as number, category_id  from (  ';
+		$sql .= 'SELECT ic1.incident_id, ic1.category_id ';
+		$sql .= 'FROM  `'.$table_prefix.'incident_category` AS ic1 ';
+		
+		$join_text = "";
+		$where_text = "";		
+		//ignore all this if we're looking at all categories
+		if(count($category_ids) > 0 AND intval($category_ids[0]) != 0)
+		{
+			$i = 0;
+			//handle AND / OR difference
+			$operator = ' OR ';
+			if($logical_operator == 'and')
+			{
+				$operator = ' AND ';
+			}
+			foreach($category_ids as $cat)
+			{
+			
+				//we handle the geometry ID later, in a special way
+				if($cat == $geometry->category_id)
+				{
+					continue;
+				}
 				
-			//figure out how many categories we need for a valid match
-			$minimum_category_count_needed = 2;
-			if(in_array($geometry->category_id, $category_ids))
-			{
-				$minimum_category_count_needed = 1;	
+				$i++;				
+				if ($i == 1)
+				{$where_text  = ' AND ( ';}
+				elseif($i > 1)
+				{$where_text .= $operator;}
+				
+				$where_text .= 'ic'.($i + 1) . '.category_id = '. $cat;
+				$join_text .= ' LEFT JOIN  `incident_category` AS ic'.($i + 1) . ' ON  `ic1`.incident_id =  `ic'.($i + 1) . '`.`incident_id` ';
 			}
-
-			//echo "<br/><br/>Geometry: " . $geometry->category_id . " cats needed: " . $minimum_category_count_needed . "<br/>";
-			
-			//now loop over these and see where there was an actual match and create the count
-			$count = 0;
-			$last_report_id = null;
-			$report_category_count = 0;
-			$found_geometry_cat_id = false;
-			$is_first = true;	
-			//echo "<br/><br/><br/>";
-			if(strtolower($logical_operator) == 'and' OR count($cats_and_geometry) == 1)
+		}
+		
+		//make sure we close that paranthesis if need be
+		if(strlen($where_text) > 0)
+		{
+			$where_text .= ') ';
+		}
+		
+		$sql .= $join_text . ' LEFT JOIN `incident` AS i ON `ic1`.incident_id = `i`.id WHERE i.incident_active = 1 AND ('. $geo_where . ') ' . $where_text;
+		$sql .= ' GROUP BY ic1.incident_id ) as temp GROUP BY category_id';
+		
+		//for debugging
+		//echo $sql;	
+		$db = new Database();
+		$query = $db->query($sql);
+		foreach($query as $q)
+		{
+			$geometries_and_counts[$cat_to_geo_id[$q->category_id]] = $q->number;
+		}
+		//make sure we have an entry for each and every geometry id
+		foreach($geometries as $geo)
+		{
+			if(!isset($geometries_and_counts[$geo->id]))
 			{
-				$geometries_and_counts[$geometry->id] = count($reports);
-				//echo "COUNT  ". count($reports) . "<br/>";
+				$geometries_and_counts[$geo->id] = 0;
 			}
 			else
-			{		
-				foreach($reports as $report)
-				{				
-					//We need to check every different set of IDs, do they contain at least one $geometry->category_id
-					//if there are two mappings with the same incident_id then we made a positive hit
-					
-					if($report->id != $last_report_id && !$is_first) //we've got a new id
-					{
-						if($found_geometry_cat_id AND $report_category_count >= $minimum_category_count_needed )
-						{
-							$count++;
-							//echo "COUNT +1 <br/>";
-						}
-						//reset everything
-						$found_geometry_cat_id = false;
-						$report_category_count = 0;
-					}
-					$last_report_id = $report->id;
-					//echo "Report ID: " . $report->id . " Cat ID: " . $report->cat_id . " GeometryID: " . $geometry->category_id . "<br/>";	
-				
-					if($report->cat_id == $geometry->category_id) 
-					{
-						$found_geometry_cat_id = true;
-					}
-					$report_category_count++;
-					$is_first = false;	
-				}//end loop over all the reports
-				
-				//to catch the last run of the loop
-				if($found_geometry_cat_id && $report_category_count >= $minimum_category_count_needed )
-				{
-					$count++;
-					//echo "COUNT +1 <br/>";
-				}
-				$geometries_and_counts[$geometry->id] = $count;
-			}//end if it's or
-		}//end of looping over all the geometries
+			{
+			}
+		}
+			
 		
 		return $geometries_and_counts;
 	} 
@@ -363,7 +357,6 @@ class Densitymap_Controller extends Controller
 				$display_title = ORM::factory('category')->where('id', $geometry->category_id)->find()->category_title;
 			}
 			
-			
 			$count = $geometries_and_counts[$geometry->id];
 			
 			if($count == 0)
@@ -398,7 +391,8 @@ class Densitymap_Controller extends Controller
 			//handle the categories			
 			foreach($category_ids as $cat_id)
 			{
-				$url .= "&c%5B%5D=" . mysql_real_escape_string($cat_id);	
+				//$url .= "&c%5B%5D=" . mysql_real_escape_string($cat_id);	
+				$url .= "&c%5B%5D=" . $cat_id;	
 			}
 			if($simple_groups_id != null AND intval($simple_groups_id) != 0)
 			{
