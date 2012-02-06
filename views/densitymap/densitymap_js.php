@@ -192,7 +192,8 @@ function DensityMap()
 					graphData = data[0];
 									
 
-					gTimeline = $.timeline({categoryId: currentCat,
+					//gTimeline = $.timeline({categoryId: currentCat,
+					gTimeline = $.timeline({categoryId: This.currentFilter["categories"],
 						startTime: new Date(startDate * 1000),
 					    endTime: new Date(endDate * 1000), mediaType: gMediaType,
 						markerOptions: gMarkerOptions,
