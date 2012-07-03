@@ -61,16 +61,18 @@ class Densitymap_settings_Controller extends Admin_Controller
 		// Check, has the form been submitted, if so, setup validation
 		if ($_POST)
 		{
+			
 			// Fetch the submitted data
 			$post_data = array_merge($_POST, $_FILES);
+			
 			
 			// geometry instance for the actions
 			$geometry = (isset($post_data['geometry_id']) AND Densitymap_geometry_Model::is_valid_geometry($post_data['geometry_id']))
 						? new Densitymap_geometry_Model($post_data['geometry_id'])
 						: new Densitymap_geometry_Model();
-						
+			
 			// Check for action
-			if ($post_data['action'] == 'a')
+			if ($post_data['dm_action'] == 'a')
 			{
 				// Manually extract the primary geometry data
 				$geometry_data = arr::extract($post_data, 'category_id', 'kml_file_old', 'label_lat', 'label_lon');
@@ -87,7 +89,7 @@ class Densitymap_settings_Controller extends Admin_Controller
 						->add_rules('kml_file', 'upload::valid','upload::type[kml,kmz]');
 				$old_file = $geometry->kml_file;
 				// Test to see if validation has passed
-				if ($geometry->validate($geometry_data) AND $post->validate())
+				if ($geometry->validate($geometry_data) AND $post->validate(false))
 				{
 					
 					$geometry->kml_file = $old_file;					
@@ -155,7 +157,7 @@ class Densitymap_settings_Controller extends Admin_Controller
 				}
 				
 			}
-			elseif ($post_data['action'] == 'd')
+			elseif ($post_data['dm_action'] == 'd')
 			{
 				// Delete action
 				if ($geometry->loaded)

@@ -8,7 +8,7 @@ About
 * description: Create a density map out of the usuaul Ushahidi map
 * version: 1.0
 * requires: 2.1
-* tested up to: 2.1
+* tested up to: 2.4
 * author: John Etherton
 * author website: http://ethertontech.com
 

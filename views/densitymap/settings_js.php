@@ -29,7 +29,7 @@ function geometryAction ( action, confirmAction, id )
 		// Set Category ID
 		$("#geometry_id_action").attr("value", id);
 		// Set Submit Type
-		$("#action").attr("value", action);		
+		$("#dm_action").attr("value", action);		
 		// Submit Form
 		$("#geometryListing").submit();
 	}

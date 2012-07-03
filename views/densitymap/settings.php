@@ -58,8 +58,8 @@
 							'id' => 'geometryMain', 'name' => 'geometryMain')); ?>
 						<input type="hidden" id="geometry_id" 
 							name="geometry_id" value="" />
-						<input type="hidden" name="action" 
-							id="action" value="a"/>
+						<input type="hidden" name="dm_action" 
+							id="dm_action" value="a"/>
 						<input type="hidden" name="kml_file_old" 
 							id="kml_file_old" value=""/>
 						<div class="tab_form_item">
@@ -89,7 +89,7 @@
 				
 					<?php print form::open(NULL,array('id' => 'geometryListing',
 					 	'name' => 'geometryListing')); ?>
-						<input type="hidden" name="action" id="action" value="">
+						<input type="hidden" name="dm_action" id="dm_action" value="">
 						<input type="hidden" name="geometry_id" id="geometry_id_action" value="">
 						<div class="table-holder">
 							<table class="table">
