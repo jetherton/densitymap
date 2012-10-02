@@ -217,6 +217,10 @@ class Densitymap_Controller extends Controller
 			{
 				$operator = ' AND ';
 			}
+			
+
+			$where_text_array = array();
+			
 			foreach($category_ids as $cat)
 			{
 			
@@ -226,16 +230,41 @@ class Densitymap_Controller extends Controller
 					continue;
 				}
 				
-				$i++;				
-				if ($i == 1)
-				{$where_text  = ' AND ( ';}
-				elseif($i > 1)
-				{$where_text .= $operator;}
+				//figure out who the parent is of this category
+				$category = ORM::factory('category', $cat);
+				$parent_id = $category->parent_id;
+				//is there an entry at the parent index
+				if(!isset($where_text_array[$parent_id]))
+				{
+					$where_text_array[$parent_id] = '';
+				}
 				
-				$where_text .= 'ic'.($i + 1) . '.category_id = '. $cat;
+				$i++;				
+				//if ($i == 1)
+				if(strlen($where_text_array[$parent_id]) != 0)
+				{$where_text_array[$parent_id]  .= ' OR ';}
+				
+				
+				$where_text_array[$parent_id] .= 'ic'.($i + 1) . '.category_id = '. $cat;
 				$join_text .= ' LEFT JOIN  `incident_category` AS ic'.($i + 1) . ' ON  `ic1`.incident_id =  `ic'.($i + 1) . '`.`incident_id` ';
 			}
+			
+			foreach($where_text_array as $where_texts)
+			{
+				if(strlen($where_text) == 0)
+				{
+					$where_text .= ' AND ( ';
+				}
+				else
+				{
+					$where_text .= ' '.$operator.' ';
+				}
+					
+				$where_text .= '('.$where_texts.')';
+			}
 		}
+		
+		
 		
 		//make sure we close that paranthesis if need be
 		if(strlen($where_text) > 0)
