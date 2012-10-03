@@ -260,7 +260,7 @@ class Densitymap_Controller extends Controller
 	 */
 	public function get_styles()
 	{
-		header('Content-type: application/json');
+	
 		
 		$geometries_and_counts = $this->get_counts();
 		
