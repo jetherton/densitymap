@@ -103,23 +103,18 @@ class Densitymap_Controller extends Controller
 	private function handleWhereTextParamters()
 	{
 		$where_text = '';
-		// Do we have a media id to filter by?
-		if (isset($_GET['m']) AND !empty($_GET['m']) AND $_GET['m'] != '0')
-		{
-		    $media_type = (int) $_GET['m'];
-		    $where_text .= " AND ".$this->table_prefix."media.media_type = " . $media_type;
-		}
+
 
 		if (isset($_GET['s']) AND !empty($_GET['s']))
 		{
 		    $start_date = (int) $_GET['s'];
-		    $where_text .= " AND UNIX_TIMESTAMP(".$this->table_prefix."incident.incident_date) >= '" . $start_date . "'";
+		    $where_text .= " AND ".$this->table_prefix."incident.incident_date >= '" . date("Y-m-d H:i:s", $start_date) . "'";
 		}
 
 		if (isset($_GET['e']) AND !empty($_GET['e']))
 		{
 		    $end_date = (int) $_GET['e'];
-		    $where_text .= " AND UNIX_TIMESTAMP(".$this->table_prefix."incident.incident_date) <= '" . $end_date . "'";
+		    $where_text .= " AND ".$this->table_prefix."incident.incident_date <= '" . date("Y-m-d H:i:s", $end_date) . "'";
 		}
 		
 		return $where_text;
@@ -197,6 +192,8 @@ class Densitymap_Controller extends Controller
 		{		
 			$cat_to_geo_id[$geometry->category_id] = $geometry->id;
 		}
+		
+		$filter = $this->handleWhereTextParamters();
 		
 		// Start Date
 		$start_date = (isset($_GET['s']) AND !empty($_GET['s'])) ?
