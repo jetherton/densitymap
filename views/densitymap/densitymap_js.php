@@ -567,21 +567,15 @@ function DensityMap()
 				}
 				else //it isn't active so make it active
 				{ 
-					//seems on really big maps with lots of reports we can't do more than 4 categories at a time.
-					if(This.currentFilter["categories"].length < (14+1))
-					{
-						$("#densityMapcat_"+catID).addClass("active");
-						
-						//make sure the "all categories" button isn't active
-						This.removeCategoryFilter("0");
-						
-						//add this category ID from the list of IDs to show
-						This.currentFilter["categories"].push(catID);
-					}
-					else
-					{
-						alert("Sorry, do to the size and complexity of the information on this site we cannot display more than "+maxCategories+" categories at once");
-					}
+				
+					$("#densityMapcat_"+catID).addClass("active");
+					
+					//make sure the "all categories" button isn't active
+					This.removeCategoryFilter("0");
+					
+					//add this category ID from the list of IDs to show
+					This.currentFilter["categories"].push(catID);
+					
 				}
 			}
 			
