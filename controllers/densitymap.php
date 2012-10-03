@@ -177,113 +177,61 @@ class Densitymap_Controller extends Controller
 	 */
 	private function get_counts()
 	{
+		if(isset($_GET['debug'])){
+			$t0 = microtime(true);	
+		}
+		
 		//initialize some variables
 		$geometries_and_counts = array();
-		$logical_operator = $this->handleLogicalOperatorParamter();
+		
 		$category_ids = $this->handleCategoriesParameter();
 		
-		//so first we want to get a list of IDs of the categories that corespond to a ID
-		$geo_where = "";
-		$geometries = ORM::factory("densitymap_geometry")->find_all();		
-		$i = 0;
+		$logical_operator = $this->handleLogicalOperatorParamter();
+		
+		$approved_text = "incident.incident_active = 1 ";
+		
+		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		//also setup this look up to use later
 		$cat_to_geo_id = array();
 		foreach($geometries as $geometry)
-		{
-			$i++;
-			if($i > 1)
-			{$geo_where .= " OR ";}
-			$geo_where .= 'ic1.category_id = '.$geometry->category_id;
+		{		
 			$cat_to_geo_id[$geometry->category_id] = $geometry->id;
 		}
-			
 		
+		// Start Date
+		$start_date = (isset($_GET['s']) AND !empty($_GET['s'])) ?
+		(int) $_GET['s'] : "0";
 		
-		//start setting up the SQL to find out what our counts will be
-		$table_prefix = Kohana::config('database.default.table_prefix');
-		$sql = 'select count(incident_id) as number, category_id  from (  ';
-		$sql .= 'SELECT ic1.incident_id, ic1.category_id ';
-		$sql .= 'FROM  `'.$table_prefix.'incident_category` AS ic1 ';
+		// End Date
+		$end_date = (isset($_GET['e']) AND !empty($_GET['e'])) ?
+		(int) $_GET['e'] : "0";
 		
-		$join_text = "";
-		$where_text = "";		
-		//ignore all this if we're looking at all categories
-		if(count($category_ids) > 0 AND intval($category_ids[0]) != 0)
+		$filter = "";
+		$filter .= ($start_date) ?
+		" AND incident.incident_date >= '" . date("Y-m-d H:i:s", $start_date) . "'" : "";
+		$filter .= ($end_date) ?
+		" AND incident.incident_date <= '" . date("Y-m-d H:i:s", $end_date) . "'" : "";
+		
+		$markers = adminmap_reports::get_reports_list_by_cat($category_ids,
+				$approved_text. $filter ,
+				$logical_operator,
+				"incident.id",
+				"asc");
+		
+		//now loop over everything
+		foreach($markers as $marker)
 		{
-			$i = 0;
-			//handle AND / OR difference
-			$operator = ' OR ';
-			if($logical_operator == 'and')
+			$id = $cat_to_geo_id[$marker['province_cat']];
+			if(!isset($geometries_and_counts[$id]))
 			{
-				$operator = ' AND ';
+				$geometries_and_counts[$id] = 0;
 			}
-			
-
-			$where_text_array = array();
-			
-			foreach($category_ids as $cat)
-			{
-			
-				//we handle the geometry ID later, in a special way
-				if($cat == $geometry->category_id)
-				{
-					continue;
-				}
-				
-				//figure out who the parent is of this category
-				$category = ORM::factory('category', $cat);
-				$parent_id = $category->parent_id;
-				//is there an entry at the parent index
-				if(!isset($where_text_array[$parent_id]))
-				{
-					$where_text_array[$parent_id] = '';
-				}
-				
-				$i++;				
-				//if ($i == 1)
-				if(strlen($where_text_array[$parent_id]) != 0)
-				{$where_text_array[$parent_id]  .= ' OR ';}
-				
-				
-				$where_text_array[$parent_id] .= 'ic'.($i + 1) . '.category_id = '. $cat;
-				$join_text .= ' LEFT JOIN  `incident_category` AS ic'.($i + 1) . ' ON  `ic1`.incident_id =  `ic'.($i + 1) . '`.`incident_id` ';
-			}
-			
-			foreach($where_text_array as $where_texts)
-			{
-				if(strlen($where_text) == 0)
-				{
-					$where_text .= ' AND ( ';
-				}
-				else
-				{
-					$where_text .= ' '.$operator.' ';
-				}
-					
-				$where_text .= '('.$where_texts.')';
-			}
+			$val = $geometries_and_counts[$id] + 1;
+			$geometries_and_counts[$id] = $val;
 		}
 		
 		
 		
-		//make sure we close that paranthesis if need be
-		if(strlen($where_text) > 0)
-		{
-			$where_text .= ') ';
-		}
-		
-		$sql .= $join_text . ' LEFT JOIN `incident` AS i ON `ic1`.incident_id = `i`.id WHERE i.incident_active = 1 AND ('. $geo_where . ') ' . $where_text;
-		$sql .= ' GROUP BY ic1.incident_id ) as temp GROUP BY category_id';
-		
-		//for debugging
-		//echo $sql;	
-		$db = new Database();
-		$query = $db->query($sql);
-		foreach($query as $q)
-		{
-			$geometries_and_counts[$cat_to_geo_id[$q->category_id]] = $q->number;
-		}
-		//make sure we have an entry for each and every geometry id
 		foreach($geometries as $geo)
 		{
 			if(!isset($geometries_and_counts[$geo->id]))
@@ -293,6 +241,12 @@ class Densitymap_Controller extends Controller
 			else
 			{
 			}
+		}
+		
+		if(isset($_GET['debug'])){
+			$t3 = microtime(true);
+			$total = $t3 - $t0;
+			echo "\r\n\r\ntime to run get_counts: ". $total . "\r\n\r\n";
 		}
 			
 		
@@ -309,6 +263,8 @@ class Densitymap_Controller extends Controller
 	 */
 	public function get_styles()
 	{
+		header('Content-type: application/json');
+		
 		$geometries_and_counts = $this->get_counts();
 		
 		$max = -1;
@@ -361,6 +317,11 @@ class Densitymap_Controller extends Controller
 	 */
 	public function get_labels()
 	{		
+		header('Content-type: application/json');
+		if(isset($_GET['debug'])){
+			$t0 = microtime(true);
+		}
+		
 		$i = 0;
 		$category_ids = $this->handleCategoriesParameter();
 		$start_end_paramters = $this->getStartEndParametersStr();
@@ -370,6 +331,10 @@ class Densitymap_Controller extends Controller
 		echo '{"type": "FeatureCollection","features":['; 
 			
 		$geometries_and_counts = $this->get_counts();
+		
+		if(isset($_GET['debug'])){
+			$t1 = microtime(true);
+		}
 		
 		$geometries = ORM::factory("densitymap_geometry")->find_all();
 		foreach($geometries as $geometry)		
@@ -468,7 +433,7 @@ class Densitymap_Controller extends Controller
 			
 			$reportStr = ($count == 1) ? Kohana::lang("ui_main.report") : Kohana::lang("ui_main.report")."s"; 
 			echo '{"type":"Feature",';  
-			echo '"properties": {"name":"<a href=\''.$url.'\'> '.$display_title .':<br/>'.$count . ' ' . $reportStr. '</a>","link": "'. $url .'",';
+			echo '"properties": {"description":"<a href=\''.$url.'\'> '.$display_title .':<br/>'.$count . ' ' . $reportStr. '</a>","link": "'. $url .'",';
 			echo '"category":[' . $cat_str . '],'; 
 			echo '"color": "CC0000", "icon": "", "thumb": "", "timestamp": "0",'; 
 			echo '"count": "' . $count . '", "fontsize":"' . $fontsize.'", "radius":"'.$radius.'", "strokewidth":"'.$strokewidth.'"},"geometry":'; 
@@ -477,6 +442,16 @@ class Densitymap_Controller extends Controller
 				
 			
 		echo ']}';
+		
+		if(isset($_GET['debug'])){
+			$t2= microtime(true);
+			$total = $t2-$t1;
+			
+			echo "\r\n\r\nTime to make the json: ".$total."\r\n\r\n";
+			$total = $t2-$t0;
+			echo "total time: ". $total;
+			echo "\r\n\r\n";
+		}
 	}
 	
 	/**
