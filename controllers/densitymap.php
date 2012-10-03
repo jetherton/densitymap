@@ -108,13 +108,13 @@ class Densitymap_Controller extends Controller
 		if (isset($_GET['s']) AND !empty($_GET['s']))
 		{
 		    $start_date = (int) $_GET['s'];
-		    $where_text .= " AND ".$this->table_prefix."incident.incident_date >= '" . date("Y-m-d H:i:s", $start_date) . "'";
+		    $where_text .= " AND incident.incident_date >= '" . date("Y-m-d H:i:s", $start_date) . "'";
 		}
 
 		if (isset($_GET['e']) AND !empty($_GET['e']))
 		{
 		    $end_date = (int) $_GET['e'];
-		    $where_text .= " AND ".$this->table_prefix."incident.incident_date <= '" . date("Y-m-d H:i:s", $end_date) . "'";
+		    $where_text .= " AND incident.incident_date <= '" . date("Y-m-d H:i:s", $end_date) . "'";
 		}
 		
 		return $where_text;
